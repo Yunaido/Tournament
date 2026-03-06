@@ -62,6 +62,12 @@ class PlayerProfile(models.Model):
 
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="profile")
     display_name = models.CharField(max_length=100)
+    avatar_data = models.BinaryField(
+        blank=True,
+        null=True,
+        editable=True,
+        help_text="Profile picture stored as WebP binary.",
+    )
     invited_by = models.ForeignKey(
         User,
         on_delete=models.SET_NULL,
@@ -88,6 +94,17 @@ class PlayerProfile(models.Model):
     @property
     def total_matches(self):
         return self.total_match_wins + self.total_match_losses + self.total_match_draws
+
+    @property
+    def avatar_url(self):
+        """Return the avatar URL or a default based on user pk."""
+        if self.avatar_data:
+            from django.urls import reverse
+            return reverse("accounts:serve_avatar", args=[self.user.pk])
+        # Cycle through 5 default avatars
+        idx = (self.user.pk % 5) + 1
+        from django.templatetags.static import static
+        return static(f"img/defaults/avatar_{idx}.svg")
 
     @property
     def win_rate(self):

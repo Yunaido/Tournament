@@ -15,6 +15,12 @@ class Tournament(models.Model):
 
     name = models.CharField(max_length=200)
     description = models.TextField(blank=True)
+    logo_data = models.BinaryField(
+        blank=True,
+        null=True,
+        editable=True,
+        help_text="Tournament logo stored as WebP binary.",
+    )
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
@@ -61,6 +67,16 @@ class Tournament(models.Model):
         """Return the TournamentPlayer ranked #1, or None."""
         standings = self.compute_standings()
         return standings[0] if standings else None
+
+    @property
+    def logo_url(self):
+        """Return the logo URL or a default based on pk."""
+        if self.logo_data:
+            from django.urls import reverse
+            return reverse("tournament_logo", args=[self.pk])
+        idx = (self.pk % 5) + 1
+        from django.templatetags.static import static
+        return static(f"img/defaults/tournament_{idx}.svg")
 
     def compute_standings(self):
         """Compute full standings with OP TCG tiebreakers."""

@@ -12,8 +12,6 @@ Usage:
     python manage.py seed           # seed fresh data
     python manage.py seed --flush   # wipe DB first, then seed
 """
-import math
-import random
 from datetime import timedelta
 
 from django.contrib.auth.models import User
@@ -26,17 +24,49 @@ from tournaments.models import Match, Round, Tournament, TournamentPlayer
 
 # ── Player definitions ───────────────────────────────────────────
 PLAYERS = [
-    {"username": "luffy", "display_name": "Luffy", "email": "luffy@crew.dev"},
-    {"username": "zoro", "display_name": "Zoro", "email": "zoro@crew.dev"},
-    {"username": "nami", "display_name": "Nami", "email": "nami@crew.dev"},
-    {"username": "sanji", "display_name": "Sanji", "email": "sanji@crew.dev"},
-    {"username": "chopper", "display_name": "Chopper", "email": "chopper@crew.dev"},
-    {"username": "robin", "display_name": "Robin", "email": "robin@crew.dev"},
-    {"username": "franky", "display_name": "Franky", "email": "franky@crew.dev"},
-    {"username": "brook", "display_name": "Brook", "email": "brook@crew.dev"},
+    {"username": "luffy",   "display_name": "Luffy",   "email": "luffy@crew.dev",   "color": "#e63946"},
+    {"username": "zoro",    "display_name": "Zoro",    "email": "zoro@crew.dev",    "color": "#2d6a2d"},
+    {"username": "nami",    "display_name": "Nami",    "email": "nami@crew.dev",    "color": "#f4a261"},
+    {"username": "sanji",   "display_name": "Sanji",   "email": "sanji@crew.dev",   "color": "#ffd166"},
+    {"username": "chopper", "display_name": "Chopper", "email": "chopper@crew.dev", "color": "#ef476f"},
+    {"username": "robin",   "display_name": "Robin",   "email": "robin@crew.dev",   "color": "#6a0572"},
+    {"username": "franky",  "display_name": "Franky",  "email": "franky@crew.dev",  "color": "#118ab2"},
+    {"username": "brook",   "display_name": "Brook",   "email": "brook@crew.dev",   "color": "#073b4c"},
 ]
 
+TOURNAMENT_COLORS = {
+    "East Blue Showdown":    "#e63946",
+    "Grand Line Cup":        "#118ab2",
+    "New World Invitational": "#ffd166",
+}
+
 PASSWORD = "testpass123"
+
+
+def _make_avatar_svg(initial: str, color: str) -> bytes:
+    """Generate a simple circular SVG avatar with a letter initial."""
+    svg = (
+        f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">'
+        f'<circle cx="50" cy="50" r="50" fill="{color}"/>'
+        f'<text x="50" y="50" dominant-baseline="central" text-anchor="middle" '
+        f'font-family="sans-serif" font-size="48" font-weight="bold" fill="#ffffff">{initial}</text>'
+        f'</svg>'
+    )
+    return svg.encode()
+
+
+def _make_logo_svg(label: str, color: str) -> bytes:
+    """Generate a simple rounded-rectangle SVG tournament logo."""
+    # Shorten label to first word for display
+    short = label.split()[0]
+    svg = (
+        f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">'
+        f'<rect width="200" height="200" rx="24" fill="{color}"/>'
+        f'<text x="100" y="100" dominant-baseline="central" text-anchor="middle" '
+        f'font-family="sans-serif" font-size="32" font-weight="bold" fill="#ffffff">{short}</text>'
+        f'</svg>'
+    )
+    return svg.encode()
 
 
 class Command(BaseCommand):
@@ -104,6 +134,7 @@ class Command(BaseCommand):
                     user=user,
                     display_name=p["display_name"],
                     invited_by=admin,
+                    avatar_data=_make_avatar_svg(p["display_name"][0], p["color"]),
                 )
                 self.stdout.write(f"  Created player: {p['username']}")
             else:
@@ -154,6 +185,7 @@ class Command(BaseCommand):
             status=Tournament.Status.FINISHED,
             max_rounds=3,
             current_round=3,
+            logo_data=_make_logo_svg(name, TOURNAMENT_COLORS[name]),
         )
 
         # Register players
@@ -195,6 +227,19 @@ class Command(BaseCommand):
             m = Match.objects.create(round=r3, player1=tps[i], player2=tps[j])
             self._confirm_match(m, res1, res2)
 
+        # Update player profiles with lifetime stats from this tournament
+        from tournaments.scoring import compute_standings as cs
+        standings = cs(tournament)
+        for row in standings:
+            profile = row.player.user.profile
+            profile.total_match_wins += row.wins
+            profile.total_match_losses += row.losses
+            profile.total_match_draws += row.draws
+            profile.tournaments_played += 1
+            if row.rank == 1:
+                profile.tournaments_won += 1
+            profile.save()
+
         self.stdout.write(f"  Created tournament: {name} (FINISHED, 3 rounds)")
 
     def _create_active_tournament(self, admin: User, players: list[User]):
@@ -215,6 +260,7 @@ class Command(BaseCommand):
             status=Tournament.Status.ACTIVE,
             max_rounds=3,
             current_round=1,
+            logo_data=_make_logo_svg(name, TOURNAMENT_COLORS[name]),
         )
 
         tps = []
@@ -262,6 +308,7 @@ class Command(BaseCommand):
             created_by=admin,
             date=timezone.now().date() + timedelta(days=3),
             status=Tournament.Status.SETUP,
+            logo_data=_make_logo_svg(name, TOURNAMENT_COLORS[name]),
         )
 
         for i, user in enumerate(players):

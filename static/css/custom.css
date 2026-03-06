@@ -1,1 +1,31 @@
-/* One Piece Tournament custom styles are in base.html <style> block */
+/* ── Badge & status colours ──────────────────────────────────────────────── */
+.badge-win  { background-color: #2a8f37; }
+.badge-loss { background-color: #af4034; }
+.badge-draw { background-color: #e6a817; }
+.badge-bye  { background-color: #6c757d; }
+
+/* ── Trophy icon ─────────────────────────────────────────────────────────── */
+.trophy { color: #ffd700; }
+
+/* ── Winner row highlight ────────────────────────────────────────────────── */
+.winner-row { background-color: rgba(255, 215, 0, 0.12) !important; }
+
+/* ── Win/Draw/Loss bar ───────────────────────────────────────────────────── */
+.wdl-bar {
+    display: flex;
+    height: 1.4rem;
+    border-radius: 0.3rem;
+    overflow: hidden;
+    min-width: 100px;
+}
+.wdl-bar .win  { background: #2a8f37; }
+.wdl-bar .draw { background: #e6a817; }
+.wdl-bar .loss { background: #af4034; }
+.wdl-bar span {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-weight: 700;
+    font-size: 0.75rem;
+}

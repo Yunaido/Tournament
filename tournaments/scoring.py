@@ -73,6 +73,18 @@ class StandingRow:
     gw_pct: Decimal
     ogw_pct: Decimal
 
+    @property
+    def omw_display(self) -> str:
+        return f"{self.omw_pct * 100:.1f}"
+
+    @property
+    def gw_display(self) -> str:
+        return f"{self.gw_pct * 100:.1f}"
+
+    @property
+    def ogw_display(self) -> str:
+        return f"{self.ogw_pct * 100:.1f}"
+
 
 def _gather_stats(tournament: Tournament) -> dict[int, PlayerStats]:
     """Walk all confirmed matches and compute per-player stats."""

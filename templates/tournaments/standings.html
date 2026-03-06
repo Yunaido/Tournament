@@ -45,12 +45,12 @@
                 </td>
                 <td class="text-center fw-bold">{{ row.match_points }}</td>
                 <td class="text-center">
-                    <span class="text-success">{{ row.wins }}</span>-<span class="text-warning">{{ row.draws
-                        }}</span>-<span class="text-danger">{{ row.losses }}</span>
+                    <span class="text-success">{{ row.wins }}</span>-<span class="text-warning">{{ row.draws }}</span>-<span
+                        class="text-danger">{{ row.losses }}</span>
                 </td>
-                <td class="text-center">{{ row.omw_pct|floatformat:1 }}%</td>
-                <td class="text-center">{{ row.gw_pct|floatformat:1 }}%</td>
-                <td class="text-center">{{ row.ogw_pct|floatformat:1 }}%</td>
+                <td class="text-center">{{ row.omw_display }}%</td>
+                <td class="text-center">{{ row.gw_display }}%</td>
+                <td class="text-center">{{ row.ogw_display }}%</td>
                 </tr>
                 {% endfor %}
         </tbody>

@@ -1,7 +1,9 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.http import HttpResponse
+from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
+
+from accounts.utils import get_image_content_type
 
 from .forms import ReportResultForm, TournamentForm
 from .models import Match, Round, Tournament, TournamentPlayer
@@ -84,10 +86,13 @@ def models_q_player1_or_2(tp):
 @login_required
 def tournament_create(request):
     if request.method == "POST":
-        form = TournamentForm(request.POST)
+        form = TournamentForm(request.POST, request.FILES)
         if form.is_valid():
             tournament = form.save(commit=False)
             tournament.created_by = request.user
+            logo_data = form.cleaned_data.get("logo")
+            if logo_data:
+                tournament.logo_data = logo_data
             tournament.save()
             # Auto-join the creator
             TournamentPlayer.objects.create(tournament=tournament, user=request.user)
@@ -96,6 +101,17 @@ def tournament_create(request):
     else:
         form = TournamentForm()
     return render(request, "tournaments/create.html", {"form": form})
+
+
+def serve_logo(request, pk):
+    """Serve a tournament's logo image from the database."""
+    tournament = get_object_or_404(Tournament, pk=pk)
+    if not tournament.logo_data:
+        raise Http404
+    data = bytes(tournament.logo_data)
+    response = HttpResponse(data, content_type=get_image_content_type(data))
+    response["X-Content-Type-Options"] = "nosniff"
+    return response
 
 
 @login_required

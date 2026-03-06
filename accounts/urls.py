@@ -10,6 +10,8 @@ urlpatterns = [
     path("login/", auth_views.LoginView.as_view(template_name="accounts/login.html"), name="login"),
     path("logout/", auth_views.LogoutView.as_view(), name="logout"),
     path("profile/", views.profile, name="profile"),
+    path("profile/edit/", views.profile_edit, name="profile_edit"),
+    path("avatar/<int:pk>/", views.serve_avatar, name="serve_avatar"),
     path("invites/", views.invite_list, name="invite_list"),
     path("invites/<uuid:token>/", views.invite_detail, name="invite_detail"),
     path("invites/<uuid:token>/toggle/", views.invite_toggle, name="invite_toggle"),

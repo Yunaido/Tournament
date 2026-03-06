@@ -15,7 +15,10 @@
     <div class="col-md-4">
         <div class="card h-100">
             <div class="card-body">
-                <h5 class="card-title">{{ t.name }}</h5>
+                <div class="d-flex align-items-center gap-2 mb-2">
+                    <img src="{{ t.logo_url }}" alt="" class="rounded" width="40" height="40" style="object-fit:cover;">
+                    <h5 class="card-title mb-0">{{ t.name }}</h5>
+                </div>
                 <p class="card-text text-muted">{{ t.date }}</p>
                 <div class="d-flex gap-2 align-items-center">
                     <span class="badge bg-{% if t.status == 'SETUP' %}info{% else %}success{% endif %}">
@@ -43,7 +46,10 @@
     <div class="col-md-4">
         <div class="card h-100 border-secondary">
             <div class="card-body">
-                <h5 class="card-title">{{ t.name }}</h5>
+                <div class="d-flex align-items-center gap-2 mb-2">
+                    <img src="{{ t.logo_url }}" alt="" class="rounded" width="40" height="40" style="object-fit:cover;">
+                    <h5 class="card-title mb-0">{{ t.name }}</h5>
+                </div>
                 <p class="card-text text-muted">{{ t.date }}</p>
                 <span class="badge bg-secondary">Finished</span>
                 <small class="text-muted">{{ t.num_players }} players</small>
