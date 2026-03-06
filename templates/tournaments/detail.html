@@ -1,0 +1,276 @@
+{% extends "base.html" %}
+{% block title %}{{ tournament.name }}{% endblock %}
+{% block content %}
+
+{# ── Winner banner (finished tournaments) ── #}
+{% if tournament.status == "FINISHED" %}
+{% with winner=tournament.get_winner %}
+{% if winner %}
+<div class="alert text-center mb-4" style="background:linear-gradient(135deg,#b8860b,#ffd700);color:#000;border:none;">
+    <h2 class="mb-0">🏆 {{ winner.player.user.profile.display_name }} wins {{ tournament.name }}!</h2>
+</div>
+{% endif %}
+{% endwith %}
+{% endif %}
+
+{# ── Header ── #}
+<div class="d-flex justify-content-between align-items-start mb-3">
+    <div>
+        <h2>{{ tournament.name }}</h2>
+        {% if tournament.description %}<p class="text-muted">{{ tournament.description }}</p>{% endif %}
+        <span class="badge
+      {% if tournament.status == 'SETUP' %}bg-info
+      {% elif tournament.status == 'ACTIVE' %}bg-success
+      {% else %}bg-secondary{% endif %}">{{ tournament.get_status_display }}</span>
+        <span class="text-muted ms-2">{{ tournament.date }}</span>
+        <span class="text-muted ms-2">·</span>
+        <span class="text-muted ms-2">{{ tournament.num_players }} player{{ tournament.num_players|pluralize }}</span>
+        {% if tournament.status != "SETUP" %}
+        <span class="text-muted ms-2">·</span>
+        <span class="text-muted">Round {{ tournament.current_round }}/{{ tournament.computed_max_rounds }}</span>
+        {% endif %}
+    </div>
+    <div>
+        {% if tournament.status != "SETUP" %}
+        <a href="{% url 'standings' tournament.pk %}" class="btn btn-outline-light btn-sm">📊 Full Standings</a>
+        {% endif %}
+    </div>
+</div>
+
+{# ── SETUP phase: player list & join/leave/start ── #}
+{% if tournament.status == "SETUP" %}
+<div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <strong>Registered Players</strong>
+        {% if user.is_authenticated %}
+          {% for tp in tournament.players.all %}
+            {% if tp.user == user %}
+              <form method="post" action="{% url 'tournament_leave' tournament.pk %}">
+                {% csrf_token %}
+                <button class="btn btn-outline-danger btn-sm">Leave</button>
+              </form>
+            {% endif %}
+          {% endfor %}
+        {% endif %}
+    </div>
+    <ul class="list-group list-group-flush">
+        {% for tp in tournament.players.all %}
+        <li class="list-group-item d-flex justify-content-between align-items-center"
+            style="background:transparent;border-color:var(--bs-border-color);">
+            {{ tp.user.profile.display_name }}
+            {% if tp.user == tournament.created_by %}
+              <span class="badge bg-warning text-dark">Organizer</span>
+            {% endif %}
+        </li>
+        {% empty %}
+        <li class="list-group-item" style="background:transparent;">No players yet.</li>
+        {% endfor %}
+    </ul>
+</div>
+
+{% if user.is_authenticated %}
+<div class="d-flex gap-2">
+    <form method="post" action="{% url 'tournament_join' tournament.pk %}">
+        {% csrf_token %}
+        <button class="btn btn-primary">Join Tournament</button>
+    </form>
+
+    {% if user == tournament.created_by or user.is_staff %}
+    <form method="post" action="{% url 'tournament_start' tournament.pk %}">
+        {% csrf_token %}
+        <button class="btn btn-success"
+            onclick="return confirm('Start the tournament with {{ tournament.num_players }} players?')">
+            🚀 Start Tournament
+        </button>
+    </form>
+    {% endif %}
+</div>
+{% endif %}
+{% endif %}
+
+{# ── ACTIVE / FINISHED: Current round matches ── #}
+{% if tournament.status == "ACTIVE" or tournament.status == "FINISHED" %}
+
+{# ── Your active match ── #}
+{% if user_match %}
+<div class="card border-warning mb-4">
+    <div class="card-header bg-warning text-dark"><strong>⚔️ Your Active Match</strong></div>
+    <div class="card-body text-center">
+        {% with is_p1=user_match.player1.user|default:None %}
+        {% if user_match.player1.user == user %}
+        <h4>You vs {{ user_match.player2.user.profile.display_name }}</h4>
+        {% else %}
+        <h4>You vs {{ user_match.player1.user.profile.display_name }}</h4>
+        {% endif %}
+        {% endwith %}
+        {% if user_match.player1_confirmed and user_match.player1.user == user %}
+        <p class="text-muted">Waiting for opponent to confirm…</p>
+        <p>Your report:
+            {% if user_match.player1_result == "WIN" %}<span class="badge bg-success">🏆 Win</span>
+            {% elif user_match.player1_result == "LOSS" %}<span class="badge bg-danger">❌ Loss</span>
+            {% elif user_match.player1_result == "DRAW" %}<span class="badge bg-warning text-dark">🤝 Draw</span>
+            {% endif %}
+        </p>
+        {% elif user_match.player2_confirmed and user_match.player2.user == user %}
+        <p class="text-muted">Waiting for opponent to confirm…</p>
+        <p>Your report:
+            {% if user_match.player2_result == "WIN" %}<span class="badge bg-success">🏆 Win</span>
+            {% elif user_match.player2_result == "LOSS" %}<span class="badge bg-danger">❌ Loss</span>
+            {% elif user_match.player2_result == "DRAW" %}<span class="badge bg-warning text-dark">🤝 Draw</span>
+            {% endif %}
+        </p>
+        {% else %}
+        <a href="{% url 'report_result' user_match.pk %}" class="btn btn-warning btn-lg">
+            📝 Report Result
+        </a>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+
+{# ── Round navigation tabs ── #}
+{% if all_rounds|length > 1 %}
+<ul class="nav nav-pills mb-3">
+    {% for r in all_rounds %}
+    <li class="nav-item">
+        <a class="nav-link {% if r.number == viewed_round.number %}active{% endif %}" href="?round={{ r.number }}">
+            Round {{ r.number }}
+            {% if r.all_confirmed %}
+            <span class="badge bg-success ms-1">✓</span>
+            {% elif r.status == 'ACTIVE' %}
+            <span class="badge bg-warning text-dark ms-1">Live</span>
+            {% endif %}
+        </a>
+    </li>
+    {% endfor %}
+</ul>
+{% endif %}
+
+{# ── Round matches ── #}
+{% if current_round %}
+<div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <strong>Round {{ current_round.number }} Matches</strong>
+        {% if current_round.all_confirmed %}
+        <span class="badge bg-success">All Confirmed</span>
+        {% else %}
+        <span class="badge bg-warning text-dark">In Progress</span>
+        {% endif %}
+    </div>
+    <div class="table-responsive">
+        <table class="table table-dark table-hover mb-0">
+            <thead>
+                <tr>
+                    <th>Player 1</th>
+                    <th class="text-center">Score</th>
+                    <th>Player 2</th>
+                    <th class="text-center">Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for m in matches %}
+                <tr{% if m.confirmed %} class="table-success" {% endif %}>
+                    <td>
+                        {{ m.player1.user.profile.display_name }}
+                        {% if m.winner == m.player1 %}<span class="badge bg-success">W</span>{% endif %}
+                    </td>
+                    <td class="text-center">
+                        {% if m.confirmed %}
+                        {{ m.player1_score }} – {{ m.player2_score }}
+                        {% elif m.is_bye %}
+                        2 – 0
+                        {% else %}
+                        — vs —
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if m.is_bye %}
+                        <em class="text-muted">BYE</em>
+                        {% else %}
+                        {{ m.player2.user.profile.display_name }}
+                        {% if m.winner == m.player2 %}<span class="badge bg-success">W</span>{% endif %}
+                        {% endif %}
+                    </td>
+                    <td class="text-center">
+                        {% if m.confirmed %}
+                        <span class="badge bg-success">✓</span>
+                        {% elif m.is_bye %}
+                        <span class="badge bg-secondary">BYE</span>
+                        {% elif m.player1_confirmed or m.player2_confirmed %}
+                        <span class="badge bg-info">Partial</span>
+                        {% else %}
+                        <span class="badge bg-dark">Pending</span>
+                        {% endif %}
+                    </td>
+                    </tr>
+                    {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+{# ── Organizer: Next Round button ── #}
+{% if tournament.status == "ACTIVE" and user.is_authenticated %}
+{% if user == tournament.created_by or user.is_staff %}
+{% if current_round.all_confirmed and not tournament.is_last_round %}
+<form method="post" action="{% url 'next_round' tournament.pk %}" class="mb-4">
+    {% csrf_token %}
+    <button class="btn btn-success btn-lg w-100">
+        ⏭️ Generate Round {{ tournament.current_round|add:1 }}
+    </button>
+</form>
+{% elif tournament.is_last_round and current_round.all_confirmed %}
+<form method="post" action="{% url 'next_round' tournament.pk %}" class="mb-4">
+    {% csrf_token %}
+    <button class="btn btn-warning btn-lg w-100">
+        🏆 Finalize Tournament
+    </button>
+</form>
+{% endif %}
+{% endif %}
+{% endif %}
+
+{# ── Inline standings preview ── #}
+{% if standings %}
+<div class="card mb-4">
+    <div class="card-header"><strong>Standings</strong></div>
+    <div class="table-responsive">
+        <table class="table table-dark table-striped mb-0">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Player</th>
+                    <th class="text-center">MP</th>
+                    <th class="text-center">W</th>
+                    <th class="text-center">D</th>
+                    <th class="text-center">L</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in standings %}
+                <tr{% if row.rank == 1 and tournament.status == "FINISHED" %} class="winner-row" {% endif %}>
+                    <td>
+                        {% if row.rank == 1 and tournament.status == "FINISHED" %}🏆{% endif %}
+                        {{ row.rank }}
+                    </td>
+                    <td>
+                        <a href="{% url 'match_history' row.player.user.pk %}" class="text-decoration-none text-light">
+                            {{ row.player.user.profile.display_name }}
+                        </a>
+                    </td>
+                    <td class="text-center">{{ row.match_points }}</td>
+                    <td class="text-center text-success">{{ row.wins }}</td>
+                    <td class="text-center text-warning">{{ row.draws }}</td>
+                    <td class="text-center text-danger">{{ row.losses }}</td>
+                    </tr>
+                    {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+{% endif %}
+
+{% endblock %}

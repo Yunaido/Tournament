@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block title %}Your Invites{% endblock %}
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h3>Your Invites</h3>
+</div>
+
+{# ── Create new invite ── #}
+<div class="card mb-4">
+    <div class="card-header"><strong>Create New Invite</strong></div>
+    <div class="card-body">
+        <form method="post" id="invite-form">
+            {% csrf_token %}
+            <div class="row g-3 align-items-end">
+                <div class="col-md-4">
+                    <label for="id_label" class="form-label">Label (optional)</label>
+                    <input type="text" class="form-control" name="label" id="id_label" placeholder="e.g. Discord group">
+                </div>
+                <div class="col-md-3">
+                    <label for="id_max_uses" class="form-label">Max uses</label>
+                    <input type="number" class="form-control" name="max_uses" id="id_max_uses" value="0" min="0">
+                    <div class="form-text">0 = unlimited</div>
+                </div>
+                <div class="col-md-3">
+                    <label for="id_expires_at" class="form-label">Expires at</label>
+                    <input type="datetime-local" class="form-control" name="expires_at" id="id_expires_at">
+                    <div class="form-text">Leave blank = never</div>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary w-100">Create</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+{# ── Existing invites ── #}
+{% if invites %}
+<div class="table-responsive">
+    <table class="table table-dark table-striped">
+        <thead>
+            <tr>
+                <th>Token</th>
+                <th>Label</th>
+                <th class="text-center">Used</th>
+                <th class="text-center">Status</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for inv in invites %}
+            <tr>
+                <td><code>{{ inv.token.hex|truncatechars:12 }}</code></td>
+                <td>{{ inv.label|default:"—" }}</td>
+                <td class="text-center">
+                    {{ inv.times_used }}{% if inv.max_uses > 0 %} / {{ inv.max_uses }}{% endif %}
+                </td>
+                <td class="text-center">
+                    {% if inv.is_valid %}
+                    <span class="badge bg-success">Active</span>
+                    {% else %}
+                    <span class="badge bg-secondary">Inactive</span>
+                    {% endif %}
+                </td>
+                <td class="text-end">
+                    <a href="{% url 'accounts:invite_detail' inv.token %}" class="btn btn-outline-light btn-sm">
+                        Share
+                    </a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<p class="text-muted">No invites yet. Create one above to invite players!</p>
+{% endif %}
+
+{% endblock %}

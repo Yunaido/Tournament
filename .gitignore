@@ -1,0 +1,24 @@
+# onepiece-tournament
+db.sqlite3
+*.pyc
+__pycache__/
+*.pyo
+*.egg-info/
+dist/
+build/
+.eggs/
+*.egg
+.env
+.venv/
+venv/
+env/
+*.log
+.DS_Store
+staticfiles/
+media/
+*.swp
+*.swo
+*~
+.idea/
+.vscode/
+node_modules/

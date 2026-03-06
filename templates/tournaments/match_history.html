@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Match History – {{ target_user.profile.display_name }}{% endblock %}
+{% block content %}
+
+<h3 class="mb-3">Match History – {{ target_user.profile.display_name }}</h3>
+
+{% if history %}
+<div class="table-responsive">
+    <table class="table table-dark table-striped">
+        <thead>
+            <tr>
+                <th>Tournament</th>
+                <th class="text-center">Round</th>
+                <th>Opponent</th>
+                <th class="text-center">Score</th>
+                <th class="text-center">Result</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for h in history %}
+            <tr>
+                <td>
+                    <a href="{% url 'tournament_detail' h.tournament.pk %}" class="text-decoration-none text-light">
+                        {{ h.tournament.name }}
+                    </a>
+                </td>
+                <td class="text-center">{{ h.round_number }}</td>
+                <td>{{ h.opponent }}</td>
+                <td class="text-center">{{ h.my_score }} – {{ h.opp_score }}</td>
+                <td class="text-center">
+                    {% if h.result == "Win" or h.result == "BYE WIN" %}
+                    <span class="badge bg-success">{{ h.result }}</span>
+                    {% elif h.result == "Loss" %}
+                    <span class="badge bg-danger">{{ h.result }}</span>
+                    {% else %}
+                    <span class="badge bg-warning text-dark">{{ h.result }}</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<p class="text-muted">No match history found.</p>
+{% endif %}
+
+<a href="{% url 'accounts:profile' %}" class="text-muted">← Back to profile</a>
+
+{% endblock %}

@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}Profile{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card mb-4">
+            <div class="card-body">
+                <h3 class="card-title">{{ user.profile.display_name }}</h3>
+
+                {% if user.profile.invited_by %}
+                <p class="text-muted mb-2">
+                    Invited by <strong>{{ user.profile.invited_by.profile.display_name }}</strong>
+                </p>
+                {% endif %}
+
+                <div class="row mt-3">
+                    <div class="col-md-6">
+                        <table class="table table-sm">
+                            <tr>
+                                <th>Tournaments Played</th>
+                                <td>{{ user.profile.tournaments_played }}</td>
+                            </tr>
+                            <tr>
+                                <th>Tournaments Won 🏆</th>
+                                <td>{{ user.profile.tournaments_won }}</td>
+                            </tr>
+                            <tr>
+                                <th>Match Wins</th>
+                                <td>{{ user.profile.total_match_wins }}</td>
+                            </tr>
+                            <tr>
+                                <th>Match Losses</th>
+                                <td>{{ user.profile.total_match_losses }}</td>
+                            </tr>
+                            <tr>
+                                <th>Match Draws</th>
+                                <td>{{ user.profile.total_match_draws }}</td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+                <a href="{% url 'match_history' pk=user.pk %}" class="btn btn-outline-primary">
+                    View Full Match History
+                </a>
+            </div>
+        </div>
+
+        {# ── People you invited ── #}
+        <div class="card">
+            <div class="card-header"><strong>People You Invited</strong></div>
+            <ul class="list-group list-group-flush">
+                {% for recruit in user.recruited.all %}
+                <li class="list-group-item d-flex justify-content-between align-items-center"
+                    style="background:transparent;border-color:var(--bs-border-color);">
+                    <span>{{ recruit.profile.display_name }}</span>
+                    <span class="text-muted small">joined {{ recruit.profile.created_at|date:"M d, Y" }}</span>
+                </li>
+                {% empty %}
+                <li class="list-group-item text-muted" style="background:transparent;">
+                    No one yet. <a href="{% url 'accounts:invite_list' %}">Create an invite</a> to recruit players!
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}

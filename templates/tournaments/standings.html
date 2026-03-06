@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}Standings – {{ tournament.name }}{% endblock %}
+{% block content %}
+
+{% if tournament.status == "FINISHED" %}
+{% with winner=tournament.get_winner %}
+{% if winner %}
+<div class="alert text-center mb-4" style="background:linear-gradient(135deg,#b8860b,#ffd700);color:#000;border:none;">
+    <h2 class="mb-0">🏆 {{ winner.player.user.profile.display_name }} wins {{ tournament.name }}!</h2>
+</div>
+{% endif %}
+{% endwith %}
+{% endif %}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h3>Standings – {{ tournament.name }}</h3>
+    <a href="{% url 'tournament_detail' tournament.pk %}" class="btn btn-outline-light btn-sm">← Back</a>
+</div>
+
+{% if standings %}
+<div class="table-responsive">
+    <table class="table table-dark table-striped">
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Player</th>
+                <th class="text-center">MP</th>
+                <th class="text-center">W-D-L</th>
+                <th class="text-center">OMW%</th>
+                <th class="text-center">GW%</th>
+                <th class="text-center">OGW%</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in standings %}
+            <tr{% if row.rank == 1 and tournament.status == "FINISHED" %} class="winner-row" {% endif %}>
+                <td>
+                    {% if row.rank == 1 and tournament.status == "FINISHED" %}🏆{% endif %}
+                    {{ row.rank }}
+                </td>
+                <td>
+                    <a href="{% url 'match_history' row.player.user.pk %}" class="text-decoration-none text-light">
+                        {{ row.player.user.profile.display_name }}
+                    </a>
+                </td>
+                <td class="text-center fw-bold">{{ row.match_points }}</td>
+                <td class="text-center">
+                    <span class="text-success">{{ row.wins }}</span>-<span class="text-warning">{{ row.draws
+                        }}</span>-<span class="text-danger">{{ row.losses }}</span>
+                </td>
+                <td class="text-center">{{ row.omw_pct|floatformat:1 }}%</td>
+                <td class="text-center">{{ row.gw_pct|floatformat:1 }}%</td>
+                <td class="text-center">{{ row.ogw_pct|floatformat:1 }}%</td>
+                </tr>
+                {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<p class="text-muted">No standings yet — the tournament hasn't started.</p>
+{% endif %}
+
+{% endblock %}

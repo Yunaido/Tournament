@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}Tournaments{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Tournaments</h2>
+    {% if user.is_authenticated %}
+    <a href="{% url 'tournament_create' %}" class="btn btn-primary">+ New Tournament</a>
+    {% endif %}
+</div>
+
+{% if active_tournaments %}
+<h4 class="mb-3">Active & Open</h4>
+<div class="row g-3 mb-4">
+    {% for t in active_tournaments %}
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <h5 class="card-title">{{ t.name }}</h5>
+                <p class="card-text text-muted">{{ t.date }}</p>
+                <div class="d-flex gap-2 align-items-center">
+                    <span class="badge bg-{% if t.status == 'SETUP' %}info{% else %}success{% endif %}">
+                        {{ t.get_status_display }}
+                    </span>
+                    <small class="text-muted">{{ t.num_players }} players</small>
+                    {% if t.status == 'ACTIVE' %}
+                    <small class="text-muted">• Round {{ t.current_round }}/{{ t.computed_max_rounds }}</small>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="card-footer">
+                <a href="{% url 'tournament_detail' pk=t.pk %}" class="btn btn-outline-light btn-sm">View</a>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+{% if finished_tournaments %}
+<h4 class="mb-3">Finished</h4>
+<div class="row g-3">
+    {% for t in finished_tournaments %}
+    <div class="col-md-4">
+        <div class="card h-100 border-secondary">
+            <div class="card-body">
+                <h5 class="card-title">{{ t.name }}</h5>
+                <p class="card-text text-muted">{{ t.date }}</p>
+                <span class="badge bg-secondary">Finished</span>
+                <small class="text-muted">{{ t.num_players }} players</small>
+            </div>
+            <div class="card-footer">
+                <a href="{% url 'tournament_detail' pk=t.pk %}" class="btn btn-outline-secondary btn-sm">Results</a>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+{% if not active_tournaments and not finished_tournaments %}
+<div class="text-center text-muted py-5">
+    <h4>No tournaments yet</h4>
+    <p>Create one to get started!</p>
+</div>
+{% endif %}
+{% endblock %}
