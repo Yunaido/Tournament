@@ -54,7 +54,7 @@ logs:
 	docker compose logs -f web
 
 # ── django management ────────────────────────────────────────────────────────
-RUN := docker compose run --rm --entrypoint "" web python manage.py
+RUN := docker compose run --rm --entrypoint "" -v "$$PWD:/app" web python manage.py
 
 migrate:
 	$(RUN) migrate

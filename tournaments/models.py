@@ -13,8 +13,26 @@ class Tournament(models.Model):
         ACTIVE = "ACTIVE", "Active"       # Rounds in progress
         FINISHED = "FINISHED", "Finished" # All rounds done, winner declared
 
+    class EventType(models.TextChoices):
+        CASUAL = "CASUAL", "Casual"
+        COMPETITIVE = "COMPETITIVE", "Competitive"
+        CHAMPIONSHIP = "CHAMPIONSHIP", "Championship"
+        DRAFT = "DRAFT", "Draft"
+        OTHER = "OTHER", "Other"
+
     name = models.CharField(max_length=200)
     description = models.TextField(blank=True)
+    event_type = models.CharField(
+        max_length=15,
+        choices=EventType.choices,
+        default=EventType.CASUAL,
+        help_text="The type of event.",
+    )
+    accent_color = models.CharField(
+        max_length=7,
+        blank=True,
+        help_text="Hex color for the card border/accent (e.g. #e63946).",
+    )
     logo_data = models.BinaryField(
         blank=True,
         null=True,

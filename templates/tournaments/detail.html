@@ -24,6 +24,9 @@
       {% if tournament.status == 'SETUP' %}bg-info
       {% elif tournament.status == 'ACTIVE' %}bg-success
       {% else %}bg-secondary{% endif %}">{{ tournament.get_status_display }}</span>
+        {% if tournament.event_type != "CASUAL" %}
+        <span class="badge" {% if tournament.accent_color %}style="background-color:{{ tournament.accent_color }};"{% else %}style="background-color:#6c757d;"{% endif %}>{{ tournament.get_event_type_display }}</span>
+        {% endif %}
         <span class="text-muted ms-2">{{ tournament.date }}</span>
         <span class="text-muted ms-2">·</span>
         <span class="text-muted ms-2">{{ tournament.num_players }} player{{ tournament.num_players|pluralize }}</span>
