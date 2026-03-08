@@ -14,7 +14,7 @@ A **One Piece Trading Card Game** tournament management web app built with **Dja
 | Static files | Whitenoise                            |
 | Images       | Pillow (BinaryField in DB)            |
 | Server       | Gunicorn                              |
-| Container    | Docker, docker-compose                |
+| Container    | Docker, Docker Compose                |
 | CI/CD        | GitHub Actions, GHCR                  |
 | E2E tests    | Playwright (TypeScript)               |
 

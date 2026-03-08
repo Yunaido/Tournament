@@ -82,7 +82,7 @@ jobs:
         run: docker load -i /tmp/image.tar
 
       - name: Start services
-        run: docker compose -f docker-compose.ci.yml up -d
+        run: docker compose -f compose.ci.yml up -d
 
       - name: Wait for web server to be ready
         run: |
@@ -96,7 +96,7 @@ jobs:
             sleep 2
           done
           echo "Server did not start in time"
-          docker compose -f docker-compose.ci.yml logs web
+          docker compose -f compose.ci.yml logs web
           exit 1
 
       - name: Setup Node.js
@@ -128,4 +128,4 @@ jobs:
 
       - name: Stop services
         if: always()
-        run: docker compose -f docker-compose.ci.yml down -v
+        run: docker compose -f compose.ci.yml down -v

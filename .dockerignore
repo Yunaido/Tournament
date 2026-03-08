@@ -15,7 +15,7 @@ venv/
 .idea/
 .vscode/
 e2e/
-docker-compose*.yml
+compose*.yml
 Dockerfile
 .dockerignore
 Makefile
