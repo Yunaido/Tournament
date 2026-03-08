@@ -2,6 +2,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.views.decorators.http import require_POST
 
 from accounts.utils import get_image_content_type
 
@@ -137,6 +138,7 @@ def tournament_leave(request, pk):
     return redirect("tournament_detail", pk=pk)
 
 
+@require_POST
 @login_required
 def tournament_kick(request, pk, user_pk):
     """Organizer removes a player from a tournament still in SETUP."""

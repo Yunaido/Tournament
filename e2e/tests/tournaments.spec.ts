@@ -439,20 +439,41 @@ test.describe("Tournaments – kick players", () => {
     });
 
     test("non-organizer cannot kick via direct URL", async ({ page }) => {
-        await loginAsPlayer(page, "luffy");
+        // Step 1: as admin, read a real player pk from a kick-form action
+        await loginAsAdmin(page);
         await page.goto("/");
         const card = page.locator(".card", { hasText: "New World Invitational" });
         await card.locator('a:has-text("View"), a:has-text("Details")').click();
         const detailUrl = page.url();
         const pk = detailUrl.match(/\/tournaments\/(\d+)\//)?.[1];
-        if (pk) {
-            // Try to kick zoro via URL
-            const response = await page.request.post(`/tournaments/${pk}/kick/3/`, {
-                headers: { "X-CSRFToken": await page.evaluate(() => (document.querySelector('[name=csrfmiddlewaretoken]') as HTMLInputElement)?.value || '') },
-            });
-            // Should redirect with error
-            expect(response.status()).toBeLessThan(500);
-        }
+        expect(pk).toBeTruthy();
+
+        // Find the first non-organizer player via its kick form URL
+        const kickForm = page.locator('form[action*="/kick/"]').first();
+        const kickAction = await kickForm.getAttribute("action");
+        const targetUserPk = kickAction?.match(/\/kick\/(\d+)\//)?.[1];
+        expect(targetUserPk).toBeTruthy();
+
+        // Count how many players are listed right now
+        const initialCount = await page.locator(".list-group-item").count();
+
+        // Step 2: log in as luffy (non-organizer) and attempt the kick via POST
+        await loginAsPlayer(page, "luffy");
+        await page.goto(detailUrl);
+        const csrfToken = await page.evaluate(
+            () => (document.querySelector("[name=csrfmiddlewaretoken]") as HTMLInputElement)?.value ?? ""
+        );
+        const response = await page.request.post(`/tournaments/${pk}/kick/${targetUserPk}/`, {
+            form: { csrfmiddlewaretoken: csrfToken },
+        });
+        // Should not result in a server error
+        expect(response.status()).toBeLessThan(500);
+
+        // Step 3: verify the player was NOT actually kicked
+        await loginAsAdmin(page);
+        await page.goto(detailUrl);
+        const countAfter = await page.locator(".list-group-item").count();
+        expect(countAfter).toBe(initialCount);
     });
 
     test("kick button not shown on ACTIVE tournament", async ({ page }) => {
