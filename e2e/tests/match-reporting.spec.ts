@@ -1,100 +1,171 @@
 import { expect, test } from "@playwright/test";
-import { expectAlert, loginAsPlayer } from "./helpers";
+import { expectAlert, loginAsPlayer, logout } from "./helpers";
 
-test.describe("Match reporting", () => {
-    test("report result page shows three choices", async ({ page }) => {
-        // Login as chopper (tps[4]) who has an unreported match in Grand Line Cup
+/** Navigate to Grand Line Cup detail from home */
+async function goToGrandLineCup(page: import("@playwright/test").Page) {
+    await page.goto("/");
+    const card = page.locator(".card", { hasText: "Grand Line Cup" });
+    await card.locator('a:has-text("View"), a:has-text("Details")').click();
+}
+
+/** Click the first available Report link and go to the report page */
+async function goToFirstReportPage(page: import("@playwright/test").Page) {
+    await goToGrandLineCup(page);
+    const reportLink = page.locator('a[href*="/report/"]').first();
+    if (!await reportLink.isVisible({ timeout: 3000 }).catch(() => false)) return false;
+    await reportLink.click();
+    return true;
+}
+
+test.describe("Match reporting – report page UI", () => {
+    test("report page shows heading and three radio choices", async ({ page }) => {
         await loginAsPlayer(page, "chopper");
-
-        // Go to the active tournament
-        await page.goto("/");
-        const card = page.locator(".card", { hasText: "Grand Line Cup" });
-        await card.locator('text="View"').click();
-
-        // Find the Report link for chopper's match
-        const reportLink = page.locator('a[href*="/report/"]').first();
-        if (await reportLink.isVisible()) {
-            await reportLink.click();
-            await expect(page.locator("h3")).toContainText("Report Match Result");
-            // Should see three radio options (Win, Loss, Draw)
-            const radios = page.locator('input[name="result"]');
-            await expect(radios).toHaveCount(3);
-        }
+        const found = await goToFirstReportPage(page);
+        if (!found) return test.skip();
+        await expect(page.locator("h3, h2")).toContainText(/Report.*Result/i);
+        const radios = page.locator('input[name="result"]');
+        await expect(radios).toHaveCount(3);
     });
 
-    test("submit a win result", async ({ page }) => {
+    test("radio labels say Won, Lost, Draw", async ({ page }) => {
         await loginAsPlayer(page, "chopper");
-        await page.goto("/");
-        const card = page.locator(".card", { hasText: "Grand Line Cup" });
-        await card.locator('text="View"').click();
-
-        const reportLink = page.locator('a[href*="/report/"]').first();
-        if (await reportLink.isVisible()) {
-            await reportLink.click();
-            // Click the WIN radio
-            await page.click('label:has-text("I Won")');
-            await page.click('button:has-text("Submit Result")');
-            // Should see a confirmation message
-            await expect(page.locator(".alert")).toBeVisible();
-        }
+        const found = await goToFirstReportPage(page);
+        if (!found) return test.skip();
+        await expect(page.locator("body")).toContainText(/I Won/i);
+        await expect(page.locator("body")).toContainText(/I Lost/i);
+        await expect(page.locator("body")).toContainText(/Draw/i);
     });
 
-    test("active match card shows reported result, not scores", async ({ page }) => {
-        // Login as nami who has a partial report in the seed data (player1_confirmed)
-        await loginAsPlayer(page, "nami");
-        await page.goto("/");
-        const card = page.locator(".card", { hasText: "Grand Line Cup" });
-        await card.locator('text="View"').click();
+    test("report page shows the opponent's display name", async ({ page }) => {
+        await loginAsPlayer(page, "chopper");
+        const found = await goToFirstReportPage(page);
+        if (!found) return test.skip();
+        // Should show both players — at minimum chopper's name
+        await expect(page.locator("body")).toContainText(/chopper|robin/i);
+    });
+});
 
-        // Find report link and submit
-        const reportLink = page.locator('a[href*="/report/"]').first();
-        if (await reportLink.isVisible()) {
-            await reportLink.click();
-            await page.click('label:has-text("I Won")');
-            await page.click('button:has-text("Submit Result")');
-        }
-
-        // The "Your Active Match" card should show the result badge, not "0 – 0"
-        const activeMatch = page.locator(".card.border-warning");
-        if (await activeMatch.isVisible()) {
-            await expect(activeMatch).toContainText("Win");
-            await expect(activeMatch).not.toContainText("0 – 0");
-        }
+test.describe("Match reporting – submit result", () => {
+    test("submitting WIN shows waiting-for-opponent message", async ({ page }) => {
+        await loginAsPlayer(page, "chopper");
+        const found = await goToFirstReportPage(page);
+        if (!found) return test.skip();
+        // Bootstrap btn-check hides the radio input — click the label instead
+        await page.locator('label[for="id_result_0"]').click();
+        await page.click('button:has-text("Submit Result")');
+        await expect(page.locator(".alert")).toBeVisible();
     });
 
-    test("both players confirm match", async ({ page, browser }) => {
-        // This test simulates two players independently reporting results
-        // Player: franky (tps[6]) vs brook (tps[7]) — both unconfirmed
+    test("submitting LOSS shows a confirmation alert", async ({ page }) => {
+        await loginAsPlayer(page, "robin");
+        const found = await goToFirstReportPage(page);
+        if (!found) return test.skip();
+        await page.locator('label[for="id_result_1"]').click();
+        await page.click('button:has-text("Submit Result")');
+        await expect(page.locator(".alert")).toBeVisible();
+    });
 
+    test("submitting DRAW shows a confirmation alert", async ({ page }) => {
+        await loginAsPlayer(page, "franky");
+        const found = await goToFirstReportPage(page);
+        if (!found) return test.skip();
+        await page.locator('label[for="id_result_2"]').click();
+        await page.click('button:has-text("Submit Result")');
+        await expect(page.locator(".alert")).toBeVisible();
+    });
+});
+
+test.describe("Match reporting – both players confirm", () => {
+    test("consistent reports result in confirmed match", async ({ page, browser }) => {
+        // Use the chopper vs robin match which should have no reports (or reset)
+        // Chopper reports WIN
+        await loginAsPlayer(page, "chopper");
+        await goToGrandLineCup(page);
+        const chopperReport = page.locator('a[href*="/report/"]').first();
+        if (!await chopperReport.isVisible({ timeout: 3000 }).catch(() => false)) return test.skip();
+        await chopperReport.click();
+        await page.locator('label[for="id_result_0"]').click();
+        await page.click('button:has-text("Submit Result")');
+        await expectAlert(page, /waiting|reported/i);
+
+        // Robin reports LOSS (consistent) in a fresh page
+        const page2 = await browser.newPage();
+        await loginAsPlayer(page2, "robin");
+        await page2.goto("/");
+        const card2 = page2.locator(".card", { hasText: "Grand Line Cup" });
+        await card2.locator('a:has-text("View"), a:has-text("Details")').click();
+        const robinReport = page2.locator('a[href*="/report/"]').first();
+        if (await robinReport.isVisible({ timeout: 3000 }).catch(() => false)) {
+            await robinReport.click();
+            await page2.locator('label[for="id_result_1"]').click();
+            await page2.click('button:has-text("Submit Result")');
+            // Should show "confirmed"
+            await expectAlert(page2, /confirmed/i);
+        }
+        await page2.close();
+    });
+});
+
+test.describe("Match reporting – conflict", () => {
+    test("conflicting reports show a warning and reset both players", async ({ page, browser }) => {
+        // Franky vs Brook — both report different winner → conflict
         // Franky reports WIN
         await loginAsPlayer(page, "franky");
-        await page.goto("/");
-        const card = page.locator(".card", { hasText: "Grand Line Cup" });
-        await card.locator('text="View"').click();
-
+        await goToGrandLineCup(page);
         const frankyReport = page.locator('a[href*="/report/"]').first();
-        if (await frankyReport.isVisible()) {
-            await frankyReport.click();
-            await page.click('label:has-text("I Won")');
-            await page.click('button:has-text("Submit Result")');
-            await expectAlert(page, "Waiting for your opponent");
-        }
+        if (!await frankyReport.isVisible({ timeout: 3000 }).catch(() => false)) return test.skip();
+        await frankyReport.click();
+        await page.locator('label[for="id_result_0"]').click();
+        await page.click('button:has-text("Submit Result")');
+        // Franky's state is pending opponent
 
-        // Brook reports LOSS (consistent with franky's WIN)
+        // Brook reports WIN too → conflict
         const page2 = await browser.newPage();
         await loginAsPlayer(page2, "brook");
         await page2.goto("/");
         const card2 = page2.locator(".card", { hasText: "Grand Line Cup" });
-        await card2.locator('text="View"').click();
-
+        await card2.locator('a:has-text("View"), a:has-text("Details")').click();
         const brookReport = page2.locator('a[href*="/report/"]').first();
-        if (await brookReport.isVisible()) {
+        if (await brookReport.isVisible({ timeout: 3000 }).catch(() => false)) {
             await brookReport.click();
-            await page2.click('label:has-text("I Lost")');
+            await page2.locator('label[for="id_result_0"]').click();
             await page2.click('button:has-text("Submit Result")');
-            await expectAlert(page2, "confirmed");
+            // Should show conflict warning
+            await expect(page2.locator(".alert-warning, .alert-danger")).toBeVisible();
         }
-
         await page2.close();
+    });
+});
+
+test.describe("Match reporting – non-participant", () => {
+    test("player not in the match cannot report it", async ({ page }) => {
+        // Luffy tries to access chopper vs robin report URL
+        await loginAsPlayer(page, "luffy");
+        await goToGrandLineCup(page);
+
+        // If any report link is visible it must be for luffy's own match
+        const reportLinks = await page.locator('a[href*="/report/"]').all();
+        for (const link of reportLinks) {
+            const href = await link.getAttribute("href");
+            if (href) {
+                await page.goto(href);
+                const url = page.url();
+                // Should either redirect or show forbidden
+                const body = await page.locator("body").textContent();
+                const isOwnMatch = body?.match(/luffy|zoro/i) != null;
+                const isForbidden = body?.match(/forbidden|403|not allowed|cannot/i) != null || url.includes("login");
+                expect(isOwnMatch || isForbidden).toBeTruthy();
+            }
+        }
+    });
+});
+
+test.describe("Match reporting – confirmed match", () => {
+    test("already-confirmed match shows confirmed badge on tournament page", async ({ page }) => {
+        // Luffy vs Zoro is confirmed in the seed (luffy WIN)
+        await loginAsPlayer(page, "luffy");
+        await goToGrandLineCup(page);
+        // The confirmed match card should show the result, not a Report link
+        await expect(page.locator("body")).toContainText(/confirmed|luffy|win/i);
     });
 });

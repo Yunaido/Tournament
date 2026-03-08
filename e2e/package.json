@@ -8,6 +8,8 @@
         "test:debug": "npx playwright test --debug"
     },
     "devDependencies": {
-        "@playwright/test": "^1.49.0"
+        "@playwright/test": "^1.49.0",
+        "@types/node": "^25.3.5",
+        "typescript": "^5.9.3"
     }
 }
