@@ -1,7 +1,7 @@
+import { expect, test } from "@playwright/test";
 import * as fs from "fs";
 import * as path from "path";
-import { expect, test } from "@playwright/test";
-import { expectAlert, loginAsAdmin, loginAsPlayer, logout } from "./helpers";
+import { expectAlert, loginAsAdmin, loginAsPlayer } from "./helpers";
 
 test.describe("Tournaments – list page", () => {
     test("home page shows active tournaments", async ({ page }) => {

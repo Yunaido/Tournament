@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { expectAlert, loginAsPlayer, logout } from "./helpers";
+import { expectAlert, loginAsPlayer } from "./helpers";
 
 /** Navigate to Grand Line Cup detail from home */
 async function goToGrandLineCup(page: import("@playwright/test").Page) {

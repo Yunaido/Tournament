@@ -1,7 +1,7 @@
+import { expect, test } from "@playwright/test";
 import * as fs from "fs";
 import * as path from "path";
-import { expect, test } from "@playwright/test";
-import { loginAsAdmin, loginAsPlayer, logout } from "./helpers";
+import { loginAsPlayer } from "./helpers";
 
 test.describe("Profile – view", () => {
     test("profile page shows display name", async ({ page }) => {

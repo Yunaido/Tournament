@@ -51,27 +51,60 @@ e2e/                 # Playwright end-to-end tests
 - **Round** — tournament, number, status (PENDING → ACTIVE → COMPLETED)
 - **Match** — round, player1, player2 (nullable for BYE), scores, per-player result/confirmed fields, overall confirmed flag, is_bye
 
-## Development Commands (via Docker)
+## Development Commands
+
+All common tasks are wrapped in the `Makefile`. Run `make` or `make help` to see the full list.
+
+### Docker
 
 ```bash
-# Build & start
-docker compose up -d --build
-
-# Run migrations
-docker compose run --rm --entrypoint "" web python manage.py migrate
-
-# Make migrations
-docker compose run --rm --entrypoint "" web python manage.py makemigrations
-
-# Seed test data
-docker compose run --rm --entrypoint "" web python manage.py seed
-
-# Django checks
-docker compose run --rm --entrypoint "" web python manage.py check
-
-# Run E2E tests (requires running server)
-cd e2e && npx playwright test
+make up          # Start containers (detached)
+make down        # Stop and remove containers
+make build       # Rebuild image and start containers
+make restart     # Restart only the web container
+make logs        # Tail web container logs
 ```
+
+### Django
+
+```bash
+make migrate     # Apply database migrations
+make migrations  # Create new migration files (makemigrations)
+make seed        # Seed development data (additive – keeps existing rows)
+make flush       # Wipe DB and re-seed from scratch
+make shell       # Open Django shell inside the container
+make check       # Run Django system checks
+```
+
+### E2E Testing
+
+```bash
+make install     # Install Playwright deps + Chromium browser
+make e2e         # Run Playwright tests against current DB state
+make e2e-ui      # Open Playwright interactive UI
+make e2e-debug   # Run headed + debug mode
+make test        # Full pipeline: flush DB → seed → run all E2E tests
+```
+
+`make test` is the canonical way to run the test suite locally. It guarantees a clean, deterministic database state (via `seed --flush`) before the Playwright run.
+
+The underlying Docker invocation for one-off management commands is:
+```bash
+docker compose run --rm --entrypoint "" web python manage.py <command>
+```
+
+## Testing Policy
+
+Every change — new feature, bug fix, or refactor — **must** be accompanied by Playwright E2E tests.
+
+- **New views / endpoints**: add tests covering the happy path, edge cases, and access control (auth required, wrong user, etc.).
+- **New forms**: test valid submission, invalid/missing data, and any server-side validation errors.
+- **Bug fixes**: add a regression test that would have caught the bug.
+- **UI changes**: update any existing tests that break, and add new ones if new interactions are introduced.
+
+Tests live in `e2e/tests/`. Use the shared helpers from `e2e/tests/helpers.ts` (`login`, `logout`, `expectAlert`, etc.) and add new helpers there if a pattern is reused across files.
+
+Run `make test` to verify the full suite passes against a clean database before considering any change complete.
 
 ## Coding Conventions
 

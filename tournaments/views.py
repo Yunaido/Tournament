@@ -185,6 +185,33 @@ def next_round(request, pk):
 
 
 @login_required
+def tournament_delete(request, pk):
+    """Delete a tournament. Organizer only. Harder confirmation when ACTIVE."""
+    tournament = get_object_or_404(Tournament, pk=pk)
+
+    if tournament.created_by != request.user and not request.user.is_staff:
+        messages.error(request, "Only the organizer can delete this tournament.")
+        return redirect("tournament_detail", pk=pk)
+
+    if tournament.status == Tournament.Status.FINISHED:
+        messages.error(request, "Finished tournaments cannot be deleted.")
+        return redirect("tournament_detail", pk=pk)
+
+    if request.method == "POST":
+        if tournament.status == Tournament.Status.ACTIVE:
+            confirm_name = request.POST.get("confirm_name", "").strip()
+            if confirm_name != tournament.name:
+                messages.error(request, "Tournament name did not match. Deletion cancelled.")
+                return redirect("tournament_delete", pk=pk)
+        name = tournament.name
+        tournament.delete()
+        messages.success(request, f"Tournament '{name}' has been deleted.")
+        return redirect("tournament_list")
+
+    return render(request, "tournaments/delete.html", {"tournament": tournament})
+
+
+@login_required
 def report_result(request, match_pk):
     """Player reports their match result."""
     match = get_object_or_404(Match, pk=match_pk, confirmed=False, is_bye=False)
