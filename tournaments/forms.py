@@ -24,13 +24,15 @@ class TournamentForm(forms.ModelForm):
 
     class Meta:
         model = Tournament
-        fields = ("name", "description", "date", "max_rounds")
+        fields = ("name", "description", "event_type", "accent_color", "date", "max_rounds")
         widgets = {
             "date": forms.DateInput(attrs={"type": "date"}),
             "description": forms.Textarea(attrs={"rows": 3}),
+            "accent_color": forms.TextInput(attrs={"type": "color", "style": "width:60px;height:38px;padding:2px;"}),
         }
         help_texts = {
             "max_rounds": "Leave at 0 to auto-calculate from player count.",
+            "accent_color": "Optional accent color for this event.",
         }
 
 

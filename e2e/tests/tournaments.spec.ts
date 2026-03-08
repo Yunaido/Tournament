@@ -118,6 +118,60 @@ test.describe("Tournaments – create", () => {
     });
 });
 
+test.describe("Tournaments – event type & accent color", () => {
+    test("championship tournament shows event type badge on list", async ({ page }) => {
+        await page.goto("/");
+        const card = page.locator(".card", { hasText: "East Blue Showdown" });
+        await expect(card.locator(".badge", { hasText: "Championship" })).toBeVisible();
+    });
+
+    test("competitive tournament shows event type badge on list", async ({ page }) => {
+        await page.goto("/");
+        const card = page.locator(".card", { hasText: "Grand Line Cup" });
+        await expect(card.locator(".badge", { hasText: "Competitive" })).toBeVisible();
+    });
+
+    test("casual tournament does NOT show event type badge", async ({ page }) => {
+        await page.goto("/");
+        const card = page.locator(".card", { hasText: "New World Invitational" });
+        await expect(card.locator(".badge", { hasText: "Casual" })).not.toBeVisible();
+    });
+
+    test("tournament with accent color has colored border", async ({ page }) => {
+        await page.goto("/");
+        const card = page.locator(".card", { hasText: "Grand Line Cup" });
+        const borderColor = await card.evaluate((el) => getComputedStyle(el).borderColor);
+        // #118ab2 → rgb(17, 138, 178)
+        expect(borderColor).toContain("17");
+    });
+
+    test("event type badge shown on detail page", async ({ page }) => {
+        await page.goto("/");
+        const card = page.locator(".card", { hasText: "Grand Line Cup" });
+        await card.locator('a:has-text("View"), a:has-text("Details")').click();
+        await expect(page.locator(".badge", { hasText: "Competitive" })).toBeVisible();
+    });
+
+    test("create form has event type and color fields", async ({ page }) => {
+        await loginAsAdmin(page);
+        await page.goto("/tournaments/create/");
+        await expect(page.locator("#id_event_type")).toBeVisible();
+        await expect(page.locator("#id_accent_color")).toBeVisible();
+    });
+
+    test("can create tournament with event type", async ({ page }) => {
+        await loginAsAdmin(page);
+        await page.goto("/tournaments/create/");
+        const name = `Championship ${Date.now()}`;
+        await page.fill("#id_name", name);
+        await page.fill("#id_date", "2026-12-01");
+        await page.selectOption("#id_event_type", "CHAMPIONSHIP");
+        await page.locator('.card-body button[type="submit"]').click();
+        await expect(page.locator("body")).toContainText(name);
+        await expect(page.locator(".badge", { hasText: "Championship" })).toBeVisible();
+    });
+});
+
 test.describe("Tournaments – join / leave", () => {
     test("player can join a SETUP tournament", async ({ page }) => {
         // Use franky — less likely to already be in the tournament
