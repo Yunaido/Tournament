@@ -1,8 +1,36 @@
 import math
 
 from django.conf import settings
+from django.core.validators import RegexValidator
 from django.db import models
 from django.utils import timezone
+
+_HEX_COLOR_VALIDATOR = RegexValidator(
+    regex=r"^#[0-9a-fA-F]{6}$",
+    message="Enter a valid hex color code (e.g. #e63946).",
+)
+
+
+class EventType(models.Model):
+    """Admin-configurable tournament event type."""
+
+    name = models.CharField(max_length=50, unique=True)
+    accent_color = models.CharField(
+        max_length=7,
+        blank=True,
+        validators=[_HEX_COLOR_VALIDATOR],
+        help_text="Hex color code (e.g. #e63946). Leave blank for no accent.",
+    )
+    sort_order = models.PositiveIntegerField(
+        default=0,
+        help_text="Lower numbers appear first in dropdowns.",
+    )
+
+    class Meta:
+        ordering = ["sort_order", "name"]
+
+    def __str__(self):
+        return self.name
 
 
 class Tournament(models.Model):
@@ -23,6 +51,12 @@ class Tournament(models.Model):
     location_url = models.URLField(
         blank=True,
         help_text="Link to a map or venue page (e.g. Google Maps URL).",
+    )
+    event_type = models.ForeignKey(
+        EventType,
+        on_delete=models.PROTECT,
+        related_name="tournaments",
+        help_text="The type of event.",
     )
     logo_data = models.BinaryField(
         blank=True,
@@ -49,7 +83,7 @@ class Tournament(models.Model):
     current_round = models.PositiveIntegerField(default=0)
 
     class Meta:
-        ordering = ["-date", "-created_at"]
+        ordering = ["-date", "-event_type__sort_order", "-created_at"]
 
     def __str__(self):
         return self.name
@@ -71,6 +105,11 @@ class Tournament(models.Model):
     @property
     def is_last_round(self) -> bool:
         return self.current_round >= self.computed_max_rounds
+
+    @property
+    def accent_color(self) -> str:
+        """Return the accent color for this tournament's event type."""
+        return self.event_type.accent_color if self.event_type_id else ""
 
     def get_winner(self):
         """Return the TournamentPlayer ranked #1, or None."""
