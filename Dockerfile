@@ -22,6 +22,11 @@ RUN DJANGO_SETTINGS_MODULE=config.settings.production \
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
+# Run as non-root for security
+RUN addgroup --system app && adduser --system --ingroup app app \
+    && chown -R app:app /app
+USER app
+
 EXPOSE 8000
 
 ENTRYPOINT ["/entrypoint.sh"]

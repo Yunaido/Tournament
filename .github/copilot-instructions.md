@@ -15,6 +15,7 @@ A **One Piece Trading Card Game** tournament management web app built with **Dja
 | Images       | Pillow (BinaryField in DB)            |
 | Server       | Gunicorn                              |
 | Container    | Docker, docker-compose                |
+| CI/CD        | GitHub Actions, GHCR                  |
 | E2E tests    | Playwright (TypeScript)               |
 
 ## Project Structure
@@ -26,6 +27,7 @@ tournaments/         # Tournament CRUD, Swiss-system pairing, match reporting, s
 templates/           # Django templates (base.html + app-specific + components/)
 static/              # CSS, JS, default images (img/defaults/)
 e2e/                 # Playwright end-to-end tests
+.github/workflows/   # GitHub Actions CI/CD pipelines
 ```
 
 ## Key Architectural Decisions
@@ -122,3 +124,41 @@ Run `make test` to verify the full suite passes against a clean database before 
 - The entrypoint.sh auto-runs migrations and creates the superuser on container start. Bypass with `--entrypoint ""` when running one-off commands.
 - Images are stored as binary data in the database — no media volume or file storage is needed.
 - Port 8000 is the default; check for conflicts if the container won't start.
+
+## CI/CD – GitHub Actions
+
+Three workflows live in `.github/workflows/`:
+
+### `ci.yml` — Continuous Integration (PRs & pushes to main)
+
+1. **Django system check** — installs Python deps and runs `manage.py check`.
+2. **Build Docker image** — builds with BuildKit, caches layers via GitHub Actions cache, exports the image as an artifact.
+3. **Playwright E2E tests** — starts the app + PostgreSQL via a CI-specific compose file, seeds data (`SEED_DATA=1`), installs Playwright + Chromium, runs the full E2E suite. Test results are uploaded as artifacts.
+
+### `publish.yml` — Build & Push Container (pushes to main & version tags)
+
+- Logs in to **GitHub Container Registry** (`ghcr.io`).
+- Builds multi-arch images (`amd64` + `arm64`).
+- Tags: `latest` on main, short SHA, semver from `v*` tags.
+- Image URL: `ghcr.io/<owner>/onepiece-tournament`.
+
+### `auto-merge.yml` — Auto-merge Dependabot
+
+- Scoped to **Dependabot PRs only** (`github.actor == 'dependabot[bot]'`). No label-based bypass.
+- Automatically enables **squash merge** and auto-approves so Dependabot PRs merge once all CI checks pass.
+- Requires **branch protection rules** on `main` (see setup below).
+
+### `dependabot.yml` — Dependency Updates
+
+Checks weekly for updates across pip, npm (e2e), GitHub Actions, and Docker base images.
+
+### Required GitHub Repo Setup
+
+To enable auto-merge, configure these settings in the repository:
+
+1. **Settings → General → Pull Requests**: check **"Allow auto-merge"**.
+2. **Settings → Branches → Branch protection rules** for `main`:
+   - ✅ Require a pull request before merging
+   - ✅ Require status checks to pass before merging → add: `Django System Check`, `Playwright E2E Tests`
+   - ✅ Require branches to be up to date before merging
+
