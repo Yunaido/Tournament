@@ -33,6 +33,17 @@
         {% endif %}
         <span class="text-muted ms-2">·</span>
         <span class="text-muted">Organized by <strong>{{ tournament.created_by.profile.display_name }}</strong></span>
+        {% if user.is_authenticated and tournament.location_name %}
+        <br>
+        <span class="text-muted mt-1">
+            📍
+            {% if tournament.location_url %}
+            <a href="{{ tournament.location_url }}" target="_blank" rel="noopener" class="text-muted">{{ tournament.location_name }}</a>
+            {% else %}
+            {{ tournament.location_name }}
+            {% endif %}
+        </span>
+        {% endif %}
         </div>
     </div>
     <div class="d-flex gap-2 align-items-start">

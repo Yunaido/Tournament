@@ -15,6 +15,15 @@ class Tournament(models.Model):
 
     name = models.CharField(max_length=200)
     description = models.TextField(blank=True)
+    location_name = models.CharField(
+        max_length=300,
+        blank=True,
+        help_text="Venue name or address (visible only to logged-in users).",
+    )
+    location_url = models.URLField(
+        blank=True,
+        help_text="Link to a map or venue page (e.g. Google Maps URL).",
+    )
     logo_data = models.BinaryField(
         blank=True,
         null=True,

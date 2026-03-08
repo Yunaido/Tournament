@@ -24,13 +24,17 @@ class TournamentForm(forms.ModelForm):
 
     class Meta:
         model = Tournament
-        fields = ("name", "description", "date", "max_rounds")
+        fields = ("name", "description", "location_name", "location_url", "date", "max_rounds")
         widgets = {
             "date": forms.DateInput(attrs={"type": "date"}),
             "description": forms.Textarea(attrs={"rows": 3}),
+            "location_name": forms.TextInput(attrs={"placeholder": "e.g. Card Shop Berlin"}),
+            "location_url": forms.URLInput(attrs={"placeholder": "https://maps.google.com/..."}),
         }
         help_texts = {
             "max_rounds": "Leave at 0 to auto-calculate from player count.",
+            "location_name": "Venue name or address (only visible to logged-in users).",
+            "location_url": "Optional link to map or venue page.",
         }
 
 

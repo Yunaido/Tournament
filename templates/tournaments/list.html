@@ -28,7 +28,18 @@
                     {% if t.status == 'ACTIVE' %}
                     <small class="text-muted">• Round {{ t.current_round }}/{{ t.computed_max_rounds }}</small>
                     {% endif %}
-                </div>                <small class="text-muted mt-1 d-block">by {{ t.created_by.profile.display_name }}</small>            </div>
+                </div>                <small class="text-muted mt-1 d-block">by {{ t.created_by.profile.display_name }}</small>
+                {% if user.is_authenticated and t.location_name %}
+                <small class="text-muted d-block">
+                    📍
+                    {% if t.location_url %}
+                    <a href="{{ t.location_url }}" target="_blank" rel="noopener" class="text-muted">{{ t.location_name }}</a>
+                    {% else %}
+                    {{ t.location_name }}
+                    {% endif %}
+                </small>
+                {% endif %}
+            </div>
             <div class="card-footer">
                 <a href="{% url 'tournament_detail' pk=t.pk %}" class="btn btn-outline-light btn-sm">View</a>
             </div>
@@ -53,6 +64,16 @@
                 <span class="badge bg-secondary">Finished</span>
                 <small class="text-muted">{{ t.num_players }} players</small>
                 <small class="text-muted mt-1 d-block">by {{ t.created_by.profile.display_name }}</small>
+                {% if user.is_authenticated and t.location_name %}
+                <small class="text-muted d-block">
+                    📍
+                    {% if t.location_url %}
+                    <a href="{{ t.location_url }}" target="_blank" rel="noopener" class="text-muted">{{ t.location_name }}</a>
+                    {% else %}
+                    {{ t.location_name }}
+                    {% endif %}
+                </small>
+                {% endif %}
             </div>
             <div class="card-footer">
                 <a href="{% url 'tournament_detail' pk=t.pk %}" class="btn btn-outline-secondary btn-sm">Results</a>

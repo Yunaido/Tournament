@@ -118,6 +118,74 @@ test.describe("Tournaments – create", () => {
     });
 });
 
+test.describe("Tournaments – location", () => {
+    test("logged-in user sees location on detail page", async ({ page }) => {
+        await loginAsAdmin(page);
+        await page.goto("/");
+        const card = page.locator(".card", { hasText: "Grand Line Cup" });
+        await card.locator('a:has-text("View"), a:has-text("Details")').click();
+        await expect(page.locator("body")).toContainText("Grand Line Card Shop");
+    });
+
+    test("location with URL is rendered as a link", async ({ page }) => {
+        await loginAsAdmin(page);
+        await page.goto("/");
+        const card = page.locator(".card", { hasText: "Grand Line Cup" });
+        await card.locator('a:has-text("View"), a:has-text("Details")').click();
+        const link = page.locator('a[href*="maps.google.com"]');
+        await expect(link).toBeVisible();
+        await expect(link).toContainText("Grand Line Card Shop");
+    });
+
+    test("anonymous user does NOT see location on detail page", async ({ page }) => {
+        await page.goto("/");
+        const card = page.locator(".card", { hasText: "Grand Line Cup" });
+        await card.locator('a:has-text("View"), a:has-text("Details")').click();
+        await expect(page.locator("body")).not.toContainText("Grand Line Card Shop");
+    });
+
+    test("logged-in user sees location on list page", async ({ page }) => {
+        await loginAsAdmin(page);
+        await page.goto("/");
+        await expect(page.locator("body")).toContainText("Grand Line Card Shop");
+    });
+
+    test("anonymous user does NOT see location on list page", async ({ page }) => {
+        await page.goto("/");
+        await expect(page.locator("body")).not.toContainText("Grand Line Card Shop");
+    });
+
+    test("location without URL is shown as plain text", async ({ page }) => {
+        await loginAsAdmin(page);
+        await page.goto("/");
+        const card = page.locator(".card", { hasText: "New World Invitational" });
+        await card.locator('a:has-text("View"), a:has-text("Details")').click();
+        await expect(page.locator("body")).toContainText("Baratie Restaurant");
+        // No link since no URL was set
+        await expect(page.locator('a:has-text("Baratie")')).not.toBeVisible();
+    });
+
+    test("create form has location fields", async ({ page }) => {
+        await loginAsAdmin(page);
+        await page.goto("/tournaments/create/");
+        await expect(page.locator("#id_location_name")).toBeVisible();
+        await expect(page.locator("#id_location_url")).toBeVisible();
+    });
+
+    test("can create tournament with location", async ({ page }) => {
+        await loginAsAdmin(page);
+        await page.goto("/tournaments/create/");
+        const name = `Location Cup ${Date.now()}`;
+        await page.fill("#id_name", name);
+        await page.fill("#id_date", "2026-12-01");
+        await page.fill("#id_location_name", "Test Venue");
+        await page.fill("#id_location_url", "https://example.com/map");
+        await page.locator('.card-body button[type="submit"]').click();
+        await expect(page.locator("body")).toContainText(name);
+        await expect(page.locator("body")).toContainText("Test Venue");
+    });
+});
+
 test.describe("Tournaments – join / leave", () => {
     test("player can join a SETUP tournament", async ({ page }) => {
         // Use franky — less likely to already be in the tournament
