@@ -2,6 +2,7 @@ from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse, Http404
 from django.shortcuts import get_object_or_404, redirect, render
+from django.views.decorators.http import require_POST
 
 from .forms import InviteForm, ProfileEditForm, RegisterForm
 from .models import Invite, PlayerProfile
@@ -104,6 +105,7 @@ def invite_detail(request, token):
     return render(request, "accounts/invite_detail.html", {"invite": invite})
 
 
+@require_POST
 @login_required
 def invite_toggle(request, token):
     """Activate or deactivate an invite."""

@@ -115,6 +115,7 @@ def serve_logo(request, pk):
     return response
 
 
+@require_POST
 @login_required
 def tournament_join(request, pk):
     tournament = get_object_or_404(Tournament, pk=pk, status=Tournament.Status.SETUP)
@@ -128,6 +129,7 @@ def tournament_join(request, pk):
     return redirect("tournament_detail", pk=pk)
 
 
+@require_POST
 @login_required
 def tournament_leave(request, pk):
     tournament = get_object_or_404(Tournament, pk=pk, status=Tournament.Status.SETUP)
@@ -164,6 +166,7 @@ def tournament_kick(request, pk, user_pk):
     return redirect("tournament_detail", pk=pk)
 
 
+@require_POST
 @login_required
 def tournament_start(request, pk):
     """Start the tournament: generate round 1."""
@@ -184,6 +187,7 @@ def tournament_start(request, pk):
     return redirect("tournament_detail", pk=pk)
 
 
+@require_POST
 @login_required
 def next_round(request, pk):
     """Generate the next round (only if current round is complete)."""
