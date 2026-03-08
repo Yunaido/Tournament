@@ -138,6 +138,31 @@ def tournament_leave(request, pk):
 
 
 @login_required
+def tournament_kick(request, pk, user_pk):
+    """Organizer removes a player from a tournament still in SETUP."""
+    tournament = get_object_or_404(Tournament, pk=pk, status=Tournament.Status.SETUP)
+
+    if tournament.created_by != request.user and not request.user.is_staff:
+        messages.error(request, "Only the organizer can remove players.")
+        return redirect("tournament_detail", pk=pk)
+
+    if user_pk == request.user.pk:
+        messages.error(request, "You can't kick yourself. Use 'Leave' instead.")
+        return redirect("tournament_detail", pk=pk)
+
+    tp = TournamentPlayer.objects.filter(
+        tournament=tournament, user_id=user_pk
+    ).first()
+    if tp:
+        name = tp.user.profile.display_name
+        tp.delete()
+        messages.success(request, f"{name} has been removed from the tournament.")
+    else:
+        messages.error(request, "Player not found in this tournament.")
+    return redirect("tournament_detail", pk=pk)
+
+
+@login_required
 def tournament_start(request, pk):
     """Start the tournament: generate round 1."""
     tournament = get_object_or_404(Tournament, pk=pk, status=Tournament.Status.SETUP)
