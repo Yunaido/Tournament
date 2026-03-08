@@ -127,7 +127,7 @@ Run `make test` to verify the full suite passes against a clean database before 
 
 ## CI/CD – GitHub Actions
 
-Three workflows live in `.github/workflows/`:
+Two workflows live in `.github/workflows/`:
 
 ### `ci.yml` — Continuous Integration (PRs & pushes to main)
 
@@ -142,23 +142,16 @@ Three workflows live in `.github/workflows/`:
 - Tags: `latest` on main, short SHA, semver from `v*` tags.
 - Image URL: `ghcr.io/<owner>/onepiece-tournament`.
 
-### `auto-merge.yml` — Auto-merge Dependabot
-
-- Scoped to **Dependabot PRs only** (`github.actor == 'dependabot[bot]'`). No label-based bypass.
-- Automatically enables **squash merge** and auto-approves so Dependabot PRs merge once all CI checks pass.
-- Requires **branch protection rules** on `main` (see setup below).
-
 ### `dependabot.yml` — Dependency Updates
 
-Checks weekly for updates across pip, npm (e2e), GitHub Actions, and Docker base images.
+Checks weekly for updates across pip, npm (e2e), GitHub Actions, and Docker base images. Dependabot PRs must pass all CI checks and be manually merged.
 
 ### Required GitHub Repo Setup
 
-To enable auto-merge, configure these settings in the repository:
+Branch protection is configured on `main`:
+- ✅ Require a pull request before merging
+- ✅ Require status checks to pass before merging → `Django System Check`, `Playwright E2E Tests`
+- ✅ Require branches to be up to date before merging
+- ✅ Enforce for admins
 
-1. **Settings → General → Pull Requests**: check **"Allow auto-merge"**.
-2. **Settings → Branches → Branch protection rules** for `main`:
-   - ✅ Require a pull request before merging
-   - ✅ Require status checks to pass before merging → add: `Django System Check`, `Playwright E2E Tests`
-   - ✅ Require branches to be up to date before merging
 
