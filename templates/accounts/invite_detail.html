@@ -25,13 +25,15 @@
                 </p>
 
                 {# ── QR Code ── #}
-                <div id="qrcode" class="mb-3 d-flex justify-content-center"></div>
+                <div id="qrcode" class="mb-3 d-flex justify-content-center">
+                    <div class="bg-white rounded p-2 d-inline-block"></div>
+                </div>
 
                 {# ── Invite URL ── #}
                 <div class="input-group mb-3">
                     <input type="text" id="invite-url" class="form-control" readonly
                         value="{{ request.scheme }}://{{ request.get_host }}{% url 'accounts:register' invite.token %}">
-                    <button class="btn btn-outline-light" onclick="copyLink()" title="Copy link">
+                    <button class="btn btn-outline-light" onclick="copyLink(this)" title="Copy link">
                         📋 Copy
                     </button>
                 </div>
@@ -66,23 +68,24 @@
     const qr = qrcode(0, 'M');
     qr.addData(inviteUrl);
     qr.make();
-    document.getElementById('qrcode').innerHTML = qr.createSvgTag({
+    const qrContainer = document.querySelector('#qrcode .bg-white');
+    qrContainer.innerHTML = qr.createSvgTag({
         cellSize: 6,
         margin: 4,
         scalable: true,
     });
     // Make SVG responsive
-    const svg = document.querySelector('#qrcode svg');
+    const svg = qrContainer.querySelector('svg');
     if (svg) {
         svg.style.maxWidth = '220px';
         svg.style.width = '100%';
         svg.style.height = 'auto';
+        svg.style.display = 'block';
     }
 
     // Copy to clipboard
-    function copyLink() {
+    function copyLink(btn) {
         navigator.clipboard.writeText(inviteUrl).then(() => {
-            const btn = event.target;
             const orig = btn.textContent;
             btn.textContent = '✓ Copied!';
             setTimeout(() => btn.textContent = orig, 1500);
