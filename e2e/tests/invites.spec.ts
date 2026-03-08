@@ -75,6 +75,20 @@ test.describe("Invites – detail", () => {
         const inputValue = await urlInput.inputValue();
         expect(inputValue).toMatch(/\/register\//);
     });
+
+    test("QR code is rendered as SVG with white background", async ({ page }) => {
+        await loginAsAdmin(page);
+        const detailUrl = await createAndGetDetailUrl(page);
+        await page.goto(detailUrl);
+        // QR code should be inside a white-background container
+        const qrWrapper = page.locator('#qrcode .bg-white');
+        await expect(qrWrapper).toBeVisible();
+        // SVG should be generated inside
+        await expect(qrWrapper.locator('svg')).toBeVisible();
+        // White background should be applied
+        const bg = await qrWrapper.evaluate((el) => getComputedStyle(el).backgroundColor);
+        expect(bg).toContain('255'); // rgb(255,255,255) or similar
+    });
 });
 
 test.describe("Invites – toggle active", () => {
