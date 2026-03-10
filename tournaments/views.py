@@ -2,6 +2,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.views.decorators.http import require_POST
 
 from accounts.utils import get_image_content_type
 
@@ -115,6 +116,7 @@ def serve_logo(request, pk):
 
 
 @login_required
+@require_POST
 def tournament_join(request, pk):
     tournament = get_object_or_404(Tournament, pk=pk, status=Tournament.Status.SETUP)
     _, created = TournamentPlayer.objects.get_or_create(
@@ -128,6 +130,7 @@ def tournament_join(request, pk):
 
 
 @login_required
+@require_POST
 def tournament_leave(request, pk):
     tournament = get_object_or_404(Tournament, pk=pk, status=Tournament.Status.SETUP)
     TournamentPlayer.objects.filter(
@@ -138,6 +141,33 @@ def tournament_leave(request, pk):
 
 
 @login_required
+@require_POST
+def tournament_kick(request, pk, user_pk):
+    """Organizer or staff removes a player (including the organizer) from a tournament still in SETUP."""
+    tournament = get_object_or_404(Tournament, pk=pk, status=Tournament.Status.SETUP)
+
+    if tournament.created_by != request.user and not request.user.is_staff:
+        messages.error(request, "Only the organizer can remove players.")
+        return redirect("tournament_detail", pk=pk)
+
+    if user_pk == request.user.pk:
+        messages.error(request, "You can't kick yourself. Use 'Leave' instead.")
+        return redirect("tournament_detail", pk=pk)
+
+    tp = TournamentPlayer.objects.filter(
+        tournament=tournament, user_id=user_pk
+    ).first()
+    if tp:
+        name = tp.user.profile.display_name
+        tp.delete()
+        messages.success(request, f"{name} has been removed from the tournament.")
+    else:
+        messages.error(request, "Player not found in this tournament.")
+    return redirect("tournament_detail", pk=pk)
+
+
+@login_required
+@require_POST
 def tournament_start(request, pk):
     """Start the tournament: generate round 1."""
     tournament = get_object_or_404(Tournament, pk=pk, status=Tournament.Status.SETUP)
@@ -158,6 +188,7 @@ def tournament_start(request, pk):
 
 
 @login_required
+@require_POST
 def next_round(request, pk):
     """Generate the next round (only if current round is complete)."""
     tournament = get_object_or_404(Tournament, pk=pk, status=Tournament.Status.ACTIVE)
@@ -182,6 +213,32 @@ def next_round(request, pk):
     except ValueError as e:
         messages.error(request, str(e))
     return redirect("tournament_detail", pk=pk)
+
+
+@login_required
+def tournament_edit(request, pk):
+    """Organizer/staff edits tournament details while it is still in SETUP."""
+    tournament = get_object_or_404(Tournament, pk=pk, status=Tournament.Status.SETUP)
+
+    if tournament.created_by != request.user and not request.user.is_staff:
+        messages.error(request, "Only the organizer can edit this tournament.")
+        return redirect("tournament_detail", pk=pk)
+
+    if request.method == "POST":
+        form = TournamentForm(request.POST, request.FILES, instance=tournament)
+        if form.is_valid():
+            updated = form.save(commit=False)
+            logo_data = form.cleaned_data.get("logo")
+            if logo_data:
+                updated.logo_data = logo_data
+            updated.save()
+            messages.success(request, "Tournament updated.")
+            return redirect("tournament_detail", pk=pk)
+    else:
+        # Pre-format the date as ISO so the <input type="date"> renders correctly.
+        initial = {"date": tournament.date.isoformat()} if tournament.date else {}
+        form = TournamentForm(instance=tournament, initial=initial)
+    return render(request, "tournaments/edit.html", {"form": form, "tournament": tournament})
 
 
 @login_required

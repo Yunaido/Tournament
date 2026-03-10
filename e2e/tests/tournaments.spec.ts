@@ -377,6 +377,211 @@ test.describe("Tournaments – organizer info", () => {
     });
 });
 
+test.describe("Tournaments – kick players", () => {
+    test("organizer sees kick button next to non-organizer players in SETUP", async ({ page }) => {
+        await loginAsAdmin(page);
+        await page.goto("/");
+        const card = page.locator(".card", { hasText: "New World Invitational" });
+        await card.locator('a:has-text("View"), a:has-text("Details")').click();
+
+        // Seed adds luffy/zoro/nami as players; admin is the organizer but is NOT in the player list.
+        // All three players should have kick buttons when the organizer is viewing.
+        const playerList = page.locator(".list-group-item");
+        for (const name of ["Luffy", "Zoro", "Nami"]) {
+            const row = playerList.filter({ hasText: name });
+            await expect(row.locator('button:has-text("✕")')).toBeVisible();
+        }
+
+        // Admin (organizer) is not in the player list at all
+        await expect(playerList.filter({ hasText: "Admin" })).not.toBeVisible();
+    });
+
+    test("non-organizer does not see kick buttons", async ({ page }) => {
+        await loginAsPlayer(page, "luffy");
+        await page.goto("/");
+        const card = page.locator(".card", { hasText: "New World Invitational" });
+        await card.locator('a:has-text("View"), a:has-text("Details")').click();
+        await expect(page.locator('button:has-text("✕")')).not.toBeVisible();
+    });
+
+    test("organizer can kick a player from SETUP tournament", async ({ page }) => {
+        // Create a fresh tournament, join a player, then kick them
+        await loginAsAdmin(page);
+        await page.goto("/tournaments/create/");
+        const name = `Kick Test ${Date.now()}`;
+        await page.fill("#id_name", name);
+        await page.fill("#id_date", "2026-12-01");
+        await page.locator('.card-body button[type="submit"]').click();
+        await expect(page.locator("body")).toContainText(name);
+        const detailUrl = page.url();
+        // Extract relative path for navigation
+        const detailPath = new URL(detailUrl).pathname;
+
+        // Login as luffy and join
+        await loginAsPlayer(page, "luffy");
+        // Verify luffy is authenticated before proceeding
+        await expect(page.locator("nav")).toContainText("Luffy");
+        await page.goto(detailPath);
+        await page.locator('button:has-text("Join Tournament")').click();
+        await expectAlert(page, /joined/i);
+
+        // Login as admin and kick luffy
+        await loginAsAdmin(page);
+        await page.goto(detailPath);
+        // Accept the confirm dialog
+        page.on("dialog", (dialog) => dialog.accept());
+        await page.locator('.list-group-item', { hasText: "Luffy" }).locator('button:has-text("✕")').click();
+        await expectAlert(page, /removed/i);
+        // Luffy should no longer be listed
+        await expect(page.locator(".list-group-item", { hasText: "Luffy" })).not.toBeVisible();
+    });
+
+    test("staff can kick the organizer from SETUP tournament", async ({ page }) => {
+        // Create a tournament as luffy (luffy = organizer) and have luffy join it
+        await loginAsPlayer(page, "luffy");
+        await page.goto("/tournaments/create/");
+        const name = `Organizer Kick Test ${Date.now()}`;
+        await page.fill("#id_name", name);
+        await page.fill("#id_date", "2026-12-01");
+        await page.locator('.card-body button[type="submit"]').click();
+        await expect(page.locator("body")).toContainText(name);
+        const detailPath = new URL(page.url()).pathname;
+        // Creator is auto-joined on tournament creation, no need to join manually.
+
+        // Admin (staff) can see the kick button next to the organizer row
+        await loginAsAdmin(page);
+        await page.goto(detailPath);
+        const organizerRow = page.locator(".list-group-item", { hasText: "Luffy" });
+        await expect(organizerRow.locator(".badge")).toContainText("Organizer");
+        await expect(organizerRow.locator('button:has-text("✕")')).toBeVisible();
+
+        // Admin kicks luffy (the organizer)
+        page.on("dialog", (dialog) => dialog.accept());
+        await organizerRow.locator('button:has-text("✕")').click();
+        await expectAlert(page, /removed/i);
+        await expect(page.locator(".list-group-item", { hasText: "Luffy" })).not.toBeVisible();
+    });
+
+    test("non-organizer cannot kick via direct URL", async ({ page }) => {
+        // Step 1: as admin, read a real player pk from a kick-form action
+        await loginAsAdmin(page);
+        await page.goto("/");
+        const card = page.locator(".card", { hasText: "New World Invitational" });
+        await card.locator('a:has-text("View"), a:has-text("Details")').click();
+        const detailUrl = page.url();
+        const pk = detailUrl.match(/\/tournaments\/(\d+)\//)?.[1];
+        expect(pk).toBeTruthy();
+
+        // Find the first non-organizer player via its kick form URL
+        const kickForm = page.locator('form[action*="/kick/"]').first();
+        const kickAction = await kickForm.getAttribute("action");
+        const targetUserPk = kickAction?.match(/\/kick\/(\d+)\//)?.[1];
+        expect(targetUserPk).toBeTruthy();
+
+        // Count how many players are listed right now
+        const initialCount = await page.locator(".list-group-item").count();
+
+        // Step 2: log in as luffy (non-organizer) and attempt the kick via POST
+        await loginAsPlayer(page, "luffy");
+        await page.goto(detailUrl);
+        const csrfToken = await page.evaluate(
+            () => (document.querySelector("[name=csrfmiddlewaretoken]") as HTMLInputElement)?.value ?? ""
+        );
+        const response = await page.request.post(`/tournaments/${pk}/kick/${targetUserPk}/`, {
+            form: { csrfmiddlewaretoken: csrfToken },
+            maxRedirects: 0,
+        });
+        // Should be rejected: 302 redirect (to login or detail) or 403 forbidden
+        expect([302, 403]).toContain(response.status());
+
+        // Step 3: verify the player was NOT actually kicked
+        await loginAsAdmin(page);
+        await page.goto(detailUrl);
+        const countAfter = await page.locator(".list-group-item").count();
+        expect(countAfter).toBe(initialCount);
+    });
+
+    test("kick button not shown on ACTIVE tournament", async ({ page }) => {
+        await loginAsAdmin(page);
+        await page.goto("/");
+        const card = page.locator(".card", { hasText: "Grand Line Cup" });
+        await card.locator('a:has-text("View"), a:has-text("Details")').click();
+        await expect(page.locator('button:has-text("✕")')).not.toBeVisible();
+    });
+});
+
+test.describe("Tournaments – edit", () => {
+    test("organizer sees Edit button on SETUP tournament", async ({ page }) => {
+        await loginAsAdmin(page);
+        await page.goto("/");
+        const card = page.locator(".card", { hasText: "New World Invitational" });
+        await card.locator('a:has-text("View"), a:has-text("Details")').click();
+        await expect(page.locator('a:has-text("Edit")')).toBeVisible();
+    });
+
+    test("Edit button not shown on ACTIVE tournament", async ({ page }) => {
+        await loginAsAdmin(page);
+        await page.goto("/");
+        const card = page.locator(".card", { hasText: "Grand Line Cup" });
+        await card.locator('a:has-text("View"), a:has-text("Details")').click();
+        await expect(page.locator('a:has-text("Edit")')).not.toBeVisible();
+    });
+
+    test("non-organizer does not see Edit button", async ({ page }) => {
+        await loginAsPlayer(page, "luffy");
+        await page.goto("/");
+        const card = page.locator(".card", { hasText: "New World Invitational" });
+        await card.locator('a:has-text("View"), a:has-text("Details")').click();
+        await expect(page.locator('a:has-text("Edit")')).not.toBeVisible();
+    });
+
+    test("organizer can edit tournament name and description", async ({ page }) => {
+        await loginAsAdmin(page);
+        await page.goto("/");
+        const card = page.locator(".card", { hasText: "New World Invitational" });
+        await card.locator('a:has-text("View"), a:has-text("Details")').click();
+        await page.locator('a:has-text("Edit")').click();
+        await expect(page).toHaveURL(/\/edit\//);
+
+        // Fields should be pre-populated
+        await expect(page.locator("#id_name")).toHaveValue("New World Invitational");
+
+        // Change the name
+        const newName = `New World Invitational (Edited ${Date.now()})`;
+        await page.fill("#id_name", newName);
+        await page.fill("#id_description", "Updated description.");
+        await page.locator('.card-body button[type="submit"]').click();
+
+        // Should redirect back to detail and show updated name
+        await expect(page).toHaveURL(/\/tournaments\/\d+\/$/);
+        await expect(page.locator("body")).toContainText(newName);
+        await expectAlert(page, /updated/i);
+
+        // Rename back so subsequent tests aren't broken
+        await page.locator('a:has-text("Edit")').click();
+        await page.fill("#id_name", "New World Invitational");
+        await page.fill("#id_description", "");
+        await page.locator('.card-body button[type="submit"]').click();
+    });
+
+    test("non-organizer cannot access edit URL directly", async ({ page }) => {
+        // Get the tournament PK from the detail page as admin
+        await loginAsAdmin(page);
+        await page.goto("/");
+        const card = page.locator(".card", { hasText: "New World Invitational" });
+        await card.locator('a:has-text("View"), a:has-text("Details")').click();
+        const pk = page.url().match(/\/tournaments\/(\d+)\//)?.[1];
+        expect(pk).toBeTruthy();
+
+        // Luffy tries to GET the edit page directly
+        await loginAsPlayer(page, "luffy");
+        await page.goto(`/tournaments/${pk}/edit/`);
+        // Should be redirected back to the detail page with an error
+        await expect(page).toHaveURL(/\/tournaments\/\d+\/$/);
+        await expectAlert(page, /only the organizer/i);
+    });
+});
+
 test.describe("Tournaments – delete", () => {
     test("non-organizer does not see delete button on detail", async ({ page }) => {
         await loginAsPlayer(page, "luffy"); // not the organizer

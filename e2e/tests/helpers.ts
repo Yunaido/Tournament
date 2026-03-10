@@ -9,8 +9,8 @@ export async function login(page: Page, username: string, password: string) {
     await page.goto("/accounts/login/");
     await page.fill("#id_username", username);
     await page.fill("#id_password", password);
-    await page.click('button[type="submit"]');
-    await page.waitForURL(/^http:\/\/localhost:8000\//);
+    await page.locator('.card form button[type="submit"]').click();
+    await page.waitForURL(/^http:\/\/localhost:8000\/(?!accounts\/login)/);
 }
 
 /** Login as admin. */
