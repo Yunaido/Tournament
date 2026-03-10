@@ -258,6 +258,8 @@ class Command(BaseCommand):
             created_by=admin,
             date=timezone.now().date(),
             status=Tournament.Status.ACTIVE,
+            location_name="Grand Line Card Shop, Sabaody",
+            location_url="https://maps.google.com/?q=Grand+Line+Card+Shop",
             max_rounds=3,
             current_round=1,
             logo_data=_make_logo_svg(name, TOURNAMENT_COLORS[name]),
@@ -308,6 +310,7 @@ class Command(BaseCommand):
             created_by=admin,
             date=timezone.now().date() + timedelta(days=3),
             status=Tournament.Status.SETUP,
+            location_name="Baratie Restaurant, East Blue",
             logo_data=_make_logo_svg(name, TOURNAMENT_COLORS[name]),
         )
 
