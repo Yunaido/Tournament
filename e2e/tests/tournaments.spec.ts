@@ -384,16 +384,16 @@ test.describe("Tournaments – kick players", () => {
         const card = page.locator(".card", { hasText: "New World Invitational" });
         await card.locator('a:has-text("View"), a:has-text("Details")').click();
 
-        // Should see kick buttons for other players (luffy, zoro, nami) but not organizer badge row
+        // Seed adds luffy/zoro/nami as players; admin is the organizer but is NOT in the player list.
+        // All three players should have kick buttons when the organizer is viewing.
         const playerList = page.locator(".list-group-item");
-        // Admin has organizer badge and no kick button
-        const adminRow = playerList.filter({ hasText: "Organizer" });
-        await expect(adminRow).toBeVisible();
-        await expect(adminRow.locator('button:has-text("✕")')).not.toBeVisible();
+        for (const name of ["Luffy", "Zoro", "Nami"]) {
+            const row = playerList.filter({ hasText: name });
+            await expect(row.locator('button:has-text("✕")')).toBeVisible();
+        }
 
-        // Other players should have kick buttons
-        const luffyRow = playerList.filter({ hasText: "Luffy" });
-        await expect(luffyRow.locator('button:has-text("✕")')).toBeVisible();
+        // Admin (organizer) is not in the player list at all
+        await expect(playerList.filter({ hasText: "Admin" })).not.toBeVisible();
     });
 
     test("non-organizer does not see kick buttons", async ({ page }) => {
@@ -414,22 +414,20 @@ test.describe("Tournaments – kick players", () => {
         await page.locator('.card-body button[type="submit"]').click();
         await expect(page.locator("body")).toContainText(name);
         const detailUrl = page.url();
+        // Extract relative path for navigation
+        const detailPath = new URL(detailUrl).pathname;
 
         // Login as luffy and join
-        await page.goto("/accounts/login/");
-        await page.fill("#id_username", "luffy");
-        await page.fill("#id_password", "testpass123");
-        await page.click('button[type="submit"]');
-        await page.goto(detailUrl);
+        await loginAsPlayer(page, "luffy");
+        // Verify luffy is authenticated before proceeding
+        await expect(page.locator("nav")).toContainText("Luffy");
+        await page.goto(detailPath);
         await page.locator('button:has-text("Join Tournament")').click();
         await expectAlert(page, /joined/i);
 
         // Login as admin and kick luffy
-        await page.goto("/accounts/login/");
-        await page.fill("#id_username", "admin");
-        await page.fill("#id_password", "adminadmin");
-        await page.click('button[type="submit"]');
-        await page.goto(detailUrl);
+        await loginAsAdmin(page);
+        await page.goto(detailPath);
         // Accept the confirm dialog
         page.on("dialog", (dialog) => dialog.accept());
         await page.locator('.list-group-item', { hasText: "Luffy" }).locator('button:has-text("✕")').click();
