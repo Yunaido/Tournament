@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load static %}
 {% block title %}{{ tournament.name }}{% endblock %}
 {% block content %}
 
@@ -135,7 +136,9 @@
 </div>
 
 {# ── Share modal ── #}
-<div class="modal fade" id="shareModal" tabindex="-1" aria-labelledby="shareModalLabel" aria-hidden="true">
+<div class="modal fade" id="shareModal" tabindex="-1" aria-labelledby="shareModalLabel" aria-hidden="true"
+     data-share-title="{{ tournament.name|escapejs }} \u2014 OP TCG Tournament"
+     data-share-text="Join this One Piece TCG tournament!">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
@@ -145,20 +148,22 @@
             <div class="modal-body text-center">
                 <p class="text-muted mb-2">Share this link so others can join <strong>{{ tournament.name }}</strong></p>
 
-                {# QR Code #}
-                <div id="tournament-qrcode" class="mb-3 d-flex justify-content-center"></div>
+                {# QR Code (server-rendered) #}
+                <div id="tournament-qrcode" class="mb-3 d-flex justify-content-center">
+                    {{ qr_svg|safe }}
+                </div>
 
                 {# URL + Copy #}
                 <div class="input-group mb-3">
                     <input type="text" id="tournament-url" class="form-control" readonly
                         value="{{ request.scheme }}://{{ request.get_host }}{% url 'tournament_detail' tournament.pk %}">
-                    <button class="btn btn-outline-light" onclick="copyTournamentLink()" id="copy-btn" title="Copy link">
+                    <button class="btn btn-outline-light" id="copy-btn" title="Copy link">
                         📋 Copy
                     </button>
                 </div>
 
                 {# Web Share API button #}
-                <button class="btn btn-primary" onclick="shareTournamentLink()" id="web-share-btn" style="display:none;">
+                <button class="btn btn-primary" id="web-share-btn" style="display:none;">
                     📤 Share via…
                 </button>
             </div>
@@ -355,65 +360,7 @@
 {% endif %}
 
 {% if tournament.status == "SETUP" and user.is_authenticated %}
-{# QR Code JS (same library used on invite page) #}
-<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const tournamentUrl = document.getElementById('tournament-url')?.value;
-    if (!tournamentUrl) return;
-
-    // Generate QR code when modal opens
-    const shareModal = document.getElementById('shareModal');
-    let qrGenerated = false;
-    shareModal?.addEventListener('shown.bs.Modal', function() {
-        if (qrGenerated) return;
-        generateQR();
-    });
-    // Also generate immediately in case modal is already visible
-    generateQR();
-
-    function generateQR() {
-        const container = document.getElementById('tournament-qrcode');
-        if (!container || container.innerHTML.trim()) return;
-        const qr = qrcode(0, 'M');
-        qr.addData(tournamentUrl);
-        qr.make();
-        container.innerHTML = qr.createSvgTag({ cellSize: 6, margin: 4, scalable: true });
-        const svg = container.querySelector('svg');
-        if (svg) {
-            svg.style.maxWidth = '200px';
-            svg.style.width = '100%';
-            svg.style.height = 'auto';
-        }
-        qrGenerated = true;
-    }
-
-    // Show Web Share API button if supported
-    if (navigator.share) {
-        const btn = document.getElementById('web-share-btn');
-        if (btn) btn.style.display = 'inline-block';
-    }
-});
-
-function copyTournamentLink() {
-    const url = document.getElementById('tournament-url').value;
-    navigator.clipboard.writeText(url).then(() => {
-        const btn = document.getElementById('copy-btn');
-        const orig = btn.textContent;
-        btn.textContent = '✓ Copied!';
-        setTimeout(() => btn.textContent = orig, 1500);
-    });
-}
-
-function shareTournamentLink() {
-    const url = document.getElementById('tournament-url').value;
-    navigator.share({
-        title: '{{ tournament.name }} — OP TCG Tournament',
-        text: 'Join this One Piece TCG tournament!',
-        url: url,
-    }).catch(() => {});
-}
-</script>
+<script src="{% static 'js/share.js' %}"></script>
 {% endif %}
 
 {% endblock %}
