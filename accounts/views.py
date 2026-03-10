@@ -105,8 +105,8 @@ def invite_detail(request, token):
     return render(request, "accounts/invite_detail.html", {"invite": invite})
 
 
-@require_POST
 @login_required
+@require_POST
 def invite_toggle(request, token):
     """Activate or deactivate an invite."""
     invite = get_object_or_404(Invite, token=token, created_by=request.user)

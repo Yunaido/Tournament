@@ -464,8 +464,8 @@ test.describe("Tournaments – kick players", () => {
         const response = await page.request.post(`/tournaments/${pk}/kick/${targetUserPk}/`, {
             form: { csrfmiddlewaretoken: csrfToken },
         });
-        // Should not result in a server error
-        expect(response.status()).toBeLessThan(500);
+        // Should be rejected (redirect to login or explicit forbidden), not a server error
+        expect([302, 403]).toContain(response.status());
 
         // Step 3: verify the player was NOT actually kicked
         await loginAsAdmin(page);
