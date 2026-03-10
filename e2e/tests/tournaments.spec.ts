@@ -436,6 +436,35 @@ test.describe("Tournaments – kick players", () => {
         await expect(page.locator(".list-group-item", { hasText: "Luffy" })).not.toBeVisible();
     });
 
+    test("staff can kick the organizer from SETUP tournament", async ({ page }) => {
+        // Create a tournament as luffy (luffy = organizer) and have luffy join it
+        await loginAsPlayer(page, "luffy");
+        await page.goto("/tournaments/create/");
+        const name = `Organizer Kick Test ${Date.now()}`;
+        await page.fill("#id_name", name);
+        await page.fill("#id_date", "2026-12-01");
+        await page.locator('.card-body button[type="submit"]').click();
+        await expect(page.locator("body")).toContainText(name);
+        const detailPath = new URL(page.url()).pathname;
+
+        // Luffy joins their own tournament so they appear in the player list
+        await page.locator('button:has-text("Join Tournament")').click();
+        await expectAlert(page, /joined/i);
+
+        // Admin (staff) can see the kick button next to the organizer row
+        await loginAsAdmin(page);
+        await page.goto(detailPath);
+        const organizerRow = page.locator(".list-group-item", { hasText: "Luffy" });
+        await expect(organizerRow.locator(".badge")).toContainText("Organizer");
+        await expect(organizerRow.locator('button:has-text("✕")')).toBeVisible();
+
+        // Admin kicks luffy (the organizer)
+        page.on("dialog", (dialog) => dialog.accept());
+        await organizerRow.locator('button:has-text("✕")').click();
+        await expectAlert(page, /removed/i);
+        await expect(page.locator(".list-group-item", { hasText: "Luffy" })).not.toBeVisible();
+    });
+
     test("non-organizer cannot kick via direct URL", async ({ page }) => {
         // Step 1: as admin, read a real player pk from a kick-form action
         await loginAsAdmin(page);

@@ -143,7 +143,7 @@ def tournament_leave(request, pk):
 @login_required
 @require_POST
 def tournament_kick(request, pk, user_pk):
-    """Organizer removes a player from a tournament still in SETUP."""
+    """Organizer or staff removes a player (including the organizer) from a tournament still in SETUP."""
     tournament = get_object_or_404(Tournament, pk=pk, status=Tournament.Status.SETUP)
 
     if tournament.created_by != request.user and not request.user.is_staff:

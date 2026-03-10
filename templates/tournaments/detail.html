@@ -86,6 +86,13 @@
             <span class="d-flex align-items-center gap-2">
             {% if tp.user == tournament.created_by %}
               <span class="badge bg-warning text-dark">Organizer</span>
+              {% if user.is_staff and tp.user != user %}
+              <form method="post" action="{% url 'tournament_kick' tournament.pk tp.user.pk %}"
+                    onsubmit="return confirm('Remove {{ tp.user.profile.display_name|escapejs }} from this tournament?')">
+                {% csrf_token %}
+                <button class="btn btn-outline-danger btn-sm py-0 px-1" title="Remove player">✕</button>
+              </form>
+              {% endif %}
             {% elif user == tournament.created_by or user.is_staff %}
               <form method="post" action="{% url 'tournament_kick' tournament.pk tp.user.pk %}"
                     onsubmit="return confirm('Remove {{ tp.user.profile.display_name|escapejs }} from this tournament?')">
