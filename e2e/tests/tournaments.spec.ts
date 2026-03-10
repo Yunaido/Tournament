@@ -446,10 +446,7 @@ test.describe("Tournaments – kick players", () => {
         await page.locator('.card-body button[type="submit"]').click();
         await expect(page.locator("body")).toContainText(name);
         const detailPath = new URL(page.url()).pathname;
-
-        // Luffy joins their own tournament so they appear in the player list
-        await page.locator('button:has-text("Join Tournament")').click();
-        await expectAlert(page, /joined/i);
+        // Creator is auto-joined on tournament creation, no need to join manually.
 
         // Admin (staff) can see the kick button next to the organizer row
         await loginAsAdmin(page);
