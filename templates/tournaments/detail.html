@@ -52,6 +52,9 @@
         {% endif %}
         {% if user.is_authenticated and tournament.status != "FINISHED" %}
         {% if user == tournament.created_by or user.is_staff %}
+        {% if tournament.status == "SETUP" %}
+        <a href="{% url 'tournament_edit' tournament.pk %}" class="btn btn-outline-light btn-sm">✏️ Edit</a>
+        {% endif %}
         <a href="{% url 'tournament_delete' tournament.pk %}" class="btn btn-outline-danger btn-sm">🗑 Delete</a>
         {% endif %}
         {% endif %}

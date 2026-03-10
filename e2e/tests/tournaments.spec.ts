@@ -510,6 +510,78 @@ test.describe("Tournaments – kick players", () => {
     });
 });
 
+test.describe("Tournaments – edit", () => {
+    test("organizer sees Edit button on SETUP tournament", async ({ page }) => {
+        await loginAsAdmin(page);
+        await page.goto("/");
+        const card = page.locator(".card", { hasText: "New World Invitational" });
+        await card.locator('a:has-text("View"), a:has-text("Details")').click();
+        await expect(page.locator('a:has-text("Edit")')).toBeVisible();
+    });
+
+    test("Edit button not shown on ACTIVE tournament", async ({ page }) => {
+        await loginAsAdmin(page);
+        await page.goto("/");
+        const card = page.locator(".card", { hasText: "Grand Line Cup" });
+        await card.locator('a:has-text("View"), a:has-text("Details")').click();
+        await expect(page.locator('a:has-text("Edit")')).not.toBeVisible();
+    });
+
+    test("non-organizer does not see Edit button", async ({ page }) => {
+        await loginAsPlayer(page, "luffy");
+        await page.goto("/");
+        const card = page.locator(".card", { hasText: "New World Invitational" });
+        await card.locator('a:has-text("View"), a:has-text("Details")').click();
+        await expect(page.locator('a:has-text("Edit")')).not.toBeVisible();
+    });
+
+    test("organizer can edit tournament name and description", async ({ page }) => {
+        await loginAsAdmin(page);
+        await page.goto("/");
+        const card = page.locator(".card", { hasText: "New World Invitational" });
+        await card.locator('a:has-text("View"), a:has-text("Details")').click();
+        await page.locator('a:has-text("Edit")').click();
+        await expect(page).toHaveURL(/\/edit\//);
+
+        // Fields should be pre-populated
+        await expect(page.locator("#id_name")).toHaveValue("New World Invitational");
+
+        // Change the name
+        const newName = `New World Invitational (Edited ${Date.now()})`;
+        await page.fill("#id_name", newName);
+        await page.fill("#id_description", "Updated description.");
+        await page.locator('.card-body button[type="submit"]').click();
+
+        // Should redirect back to detail and show updated name
+        await expect(page).toHaveURL(/\/tournaments\/\d+\/$/);
+        await expect(page.locator("body")).toContainText(newName);
+        await expectAlert(page, /updated/i);
+
+        // Rename back so subsequent tests aren't broken
+        await page.locator('a:has-text("Edit")').click();
+        await page.fill("#id_name", "New World Invitational");
+        await page.fill("#id_description", "");
+        await page.locator('.card-body button[type="submit"]').click();
+    });
+
+    test("non-organizer cannot access edit URL directly", async ({ page }) => {
+        // Get the tournament PK from the detail page as admin
+        await loginAsAdmin(page);
+        await page.goto("/");
+        const card = page.locator(".card", { hasText: "New World Invitational" });
+        await card.locator('a:has-text("View"), a:has-text("Details")').click();
+        const pk = page.url().match(/\/tournaments\/(\d+)\//)?.[1];
+        expect(pk).toBeTruthy();
+
+        // Luffy tries to GET the edit page directly
+        await loginAsPlayer(page, "luffy");
+        await page.goto(`/tournaments/${pk}/edit/`);
+        // Should be redirected back to the detail page with an error
+        await expect(page).toHaveURL(/\/tournaments\/\d+\/$/);
+        await expectAlert(page, /only the organizer/i);
+    });
+});
+
 test.describe("Tournaments – delete", () => {
     test("non-organizer does not see delete button on detail", async ({ page }) => {
         await loginAsPlayer(page, "luffy"); // not the organizer

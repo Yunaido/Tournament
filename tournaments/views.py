@@ -216,6 +216,32 @@ def next_round(request, pk):
 
 
 @login_required
+def tournament_edit(request, pk):
+    """Organizer/staff edits tournament details while it is still in SETUP."""
+    tournament = get_object_or_404(Tournament, pk=pk, status=Tournament.Status.SETUP)
+
+    if tournament.created_by != request.user and not request.user.is_staff:
+        messages.error(request, "Only the organizer can edit this tournament.")
+        return redirect("tournament_detail", pk=pk)
+
+    if request.method == "POST":
+        form = TournamentForm(request.POST, request.FILES, instance=tournament)
+        if form.is_valid():
+            updated = form.save(commit=False)
+            logo_data = form.cleaned_data.get("logo")
+            if logo_data:
+                updated.logo_data = logo_data
+            updated.save()
+            messages.success(request, "Tournament updated.")
+            return redirect("tournament_detail", pk=pk)
+    else:
+        # Pre-format the date as ISO so the <input type="date"> renders correctly.
+        initial = {"date": tournament.date.isoformat()} if tournament.date else {}
+        form = TournamentForm(instance=tournament, initial=initial)
+    return render(request, "tournaments/edit.html", {"form": form, "tournament": tournament})
+
+
+@login_required
 def tournament_delete(request, pk):
     """Delete a tournament. Organizer only. Harder confirmation when ACTIVE."""
     tournament = get_object_or_404(Tournament, pk=pk)
