@@ -17,7 +17,10 @@ COPY . .
 # Collect static files (whitenoise serves them)
 RUN DJANGO_SETTINGS_MODULE=config.settings.production \
     SECRET_KEY=build-placeholder \
-    python manage.py collectstatic --noinput 2>/dev/null || true
+    POSTGRES_DB=build \
+    POSTGRES_USER=build \
+    POSTGRES_PASSWORD=build \
+    python manage.py collectstatic --noinput
 
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
