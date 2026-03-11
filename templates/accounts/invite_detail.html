@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load static %}
 {% block title %}Invite Link{% endblock %}
 {% block content %}
 
@@ -24,21 +25,23 @@
                     {% if invite.expires_at %}· Expires {{ invite.expires_at }}{% endif %}
                 </p>
 
-                {# ── QR Code ── #}
-                <div id="qrcode" class="mb-3 d-flex justify-content-center"></div>
+                {# ── QR Code (server-rendered) ── #}
+                <div id="qrcode" class="mb-3 d-flex justify-content-center">{{ qr_svg }}</div>
 
                 {# ── Invite URL ── #}
                 <div class="input-group mb-3">
                     <input type="text" id="invite-url" class="form-control" readonly
                         value="{{ request.scheme }}://{{ request.get_host }}{% url 'accounts:register' invite.token %}">
-                    <button class="btn btn-outline-light" onclick="copyLink()" title="Copy link">
+                    <button class="btn btn-outline-light" id="copy-btn" title="Copy link">
                         📋 Copy
                     </button>
                 </div>
 
                 {# ── Action buttons ── #}
                 <div class="d-flex gap-2 justify-content-center mb-3">
-                    <button class="btn btn-primary" onclick="shareLink()" id="share-btn" style="display:none;">
+                    <button class="btn btn-primary" id="share-btn" style="display:none;"
+                        data-share-title="Join our OP TCG Tournament!"
+                        data-share-text="You've been invited to join a One Piece TCG tournament. Click to register:">
                         📤 Share
                     </button>
                     <form method="post" action="{% url 'accounts:invite_toggle' invite.token %}">
@@ -57,49 +60,7 @@
     </div>
 </div>
 
-{# QR Code JS (lightweight, no dependencies) #}
-<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
-<script>
-    const inviteUrl = document.getElementById('invite-url').value;
-
-    // Generate QR code
-    const qr = qrcode(0, 'M');
-    qr.addData(inviteUrl);
-    qr.make();
-    document.getElementById('qrcode').innerHTML = qr.createSvgTag({
-        cellSize: 6,
-        margin: 4,
-        scalable: true,
-    });
-    // Make SVG responsive
-    const svg = document.querySelector('#qrcode svg');
-    if (svg) {
-        svg.style.maxWidth = '220px';
-        svg.style.width = '100%';
-        svg.style.height = 'auto';
-    }
-
-    // Copy to clipboard
-    function copyLink() {
-        navigator.clipboard.writeText(inviteUrl).then(() => {
-            const btn = event.target;
-            const orig = btn.textContent;
-            btn.textContent = '✓ Copied!';
-            setTimeout(() => btn.textContent = orig, 1500);
-        });
-    }
-
-    // Web Share API (mobile-friendly)
-    if (navigator.share) {
-        document.getElementById('share-btn').style.display = 'inline-block';
-    }
-    function shareLink() {
-        navigator.share({
-            title: 'Join our OP TCG Tournament!',
-            text: 'You\'ve been invited to join a One Piece TCG tournament. Click to register:',
-            url: inviteUrl,
-        }).catch(() => { });
-    }
-</script>
+{# Copy / Share JS (no external dependencies) #}
+<script src="{% static 'js/share.js' %}"></script>
 
 {% endblock %}

@@ -2,9 +2,10 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.views.decorators.http import require_POST
 
-from accounts.utils import get_image_content_type
+from accounts.utils import get_image_content_type, make_qr_svg
 
 from .forms import ReportResultForm, TournamentForm
 from .models import Match, Round, Tournament, TournamentPlayer
@@ -62,6 +63,14 @@ def tournament_detail(request, pk):
                 .first()
             )
 
+    # Generate QR code for share modal (SETUP tournaments, authenticated users)
+    qr_svg = None
+    if tournament.status == Tournament.Status.SETUP and request.user.is_authenticated:
+        share_url = request.build_absolute_uri(
+            reverse("tournament_detail", args=[tournament.pk])
+        )
+        qr_svg = make_qr_svg(share_url)
+
     return render(
         request,
         "tournaments/detail.html",
@@ -73,6 +82,7 @@ def tournament_detail(request, pk):
             "current_round": viewed_round,  # kept for template compat
             "matches": matches,
             "user_match": user_match,
+            "qr_svg": qr_svg,
         },
     )
 

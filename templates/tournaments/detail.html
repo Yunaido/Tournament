@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load static %}
 {% block title %}{{ tournament.name }}{% endblock %}
 {% block content %}
 
@@ -127,6 +128,48 @@
         </button>
     </form>
     {% endif %}
+
+    {# Share tournament link #}
+    <button class="btn btn-outline-light" data-bs-toggle="modal" data-bs-target="#shareModal">
+        📤 Share
+    </button>
+</div>
+
+{# ── Share modal ── #}
+<div class="modal fade" id="shareModal" tabindex="-1" aria-labelledby="shareModalLabel" aria-hidden="true"
+     data-share-title="{{ tournament.name|escapejs }} \u2014 OP TCG Tournament"
+     data-share-text="Join this One Piece TCG tournament!">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="shareModalLabel">Share Tournament Link</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center">
+                <p class="text-muted mb-2">Share this link so others can join <strong>{{ tournament.name }}</strong></p>
+
+                {# QR Code (server-rendered) #}
+                <div id="tournament-qrcode" class="mb-3 d-flex justify-content-center">
+                    {{ qr_svg }}
+                </div>
+
+                {# URL + Copy #}
+                <div class="input-group mb-3">
+                    <input type="text" id="tournament-url" class="form-control" readonly
+                        value="{{ request.scheme }}://{{ request.get_host }}{% url 'tournament_detail' tournament.pk %}">
+                    <button class="btn btn-outline-light" id="copy-btn" title="Copy link">
+                        📋 Copy
+                    </button>
+                </div>
+
+                {# Web Share API button #}
+                <button class="btn btn-primary" id="web-share-btn" style="display:none;">
+                    📤 Share via…
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 </div>
 {% endif %}
 {% endif %}
@@ -314,6 +357,10 @@
 </div>
 {% endif %}
 
+{% endif %}
+
+{% if tournament.status == "SETUP" and user.is_authenticated %}
+<script src="{% static 'js/share.js' %}"></script>
 {% endif %}
 
 {% endblock %}

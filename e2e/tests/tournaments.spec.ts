@@ -186,6 +186,61 @@ test.describe("Tournaments – location", () => {
     });
 });
 
+test.describe("Tournaments – share link", () => {
+    test("share button visible on SETUP tournament for logged-in user", async ({ page }) => {
+        await loginAsAdmin(page);
+        await page.goto("/");
+        const card = page.locator(".card", { hasText: "New World Invitational" });
+        await card.locator('a:has-text("View"), a:has-text("Details")').click();
+        await expect(page.locator('button[data-bs-target="#shareModal"]')).toBeVisible();
+    });
+
+    test("share button NOT visible for anonymous users", async ({ page }) => {
+        await page.goto("/");
+        const card = page.locator(".card", { hasText: "New World Invitational" });
+        await card.locator('a:has-text("View"), a:has-text("Details")').click();
+        await expect(page.locator('button[data-bs-target="#shareModal"]')).not.toBeVisible();
+    });
+
+    test("clicking share opens modal with QR code and URL", async ({ page }) => {
+        await loginAsAdmin(page);
+        await page.goto("/");
+        const card = page.locator(".card", { hasText: "New World Invitational" });
+        await card.locator('a:has-text("View"), a:has-text("Details")').click();
+        await page.locator('button[data-bs-target="#shareModal"]').click();
+        // Modal should appear
+        await expect(page.locator("#shareModal")).toBeVisible();
+        // QR code should be rendered (SVG inside the container)
+        await expect(page.locator("#tournament-qrcode svg")).toBeVisible();
+        // URL field should contain the tournament URL
+        const urlField = page.locator("#tournament-url");
+        await expect(urlField).toBeVisible();
+        const value = await urlField.inputValue();
+        expect(value).toContain("/tournaments/");
+    });
+
+    test("copy button triggers clipboard write", async ({ page }) => {
+        await loginAsAdmin(page);
+        await page.goto("/");
+        const card = page.locator(".card", { hasText: "New World Invitational" });
+        await card.locator('a:has-text("View"), a:has-text("Details")').click();
+        await page.locator('button[data-bs-target="#shareModal"]').click();
+        await expect(page.locator("#shareModal")).toBeVisible();
+        await page.locator("#copy-btn").click();
+        // Button text changes to "Copied" (via clipboard API or execCommand fallback)
+        await expect(page.locator("#copy-btn")).toContainText("Copied");
+    });
+
+    test("share button not shown on ACTIVE tournament", async ({ page }) => {
+        await loginAsAdmin(page);
+        await page.goto("/");
+        const card = page.locator(".card", { hasText: "Grand Line Cup" });
+        await card.locator('a:has-text("View"), a:has-text("Details")').click();
+        // Share modal shouldn't exist since tournament is ACTIVE
+        await expect(page.locator("#shareModal")).not.toBeVisible();
+    });
+});
+
 test.describe("Tournaments – join / leave", () => {
     test("player can join a SETUP tournament", async ({ page }) => {
         // Use franky — less likely to already be in the tournament

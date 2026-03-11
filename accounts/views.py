@@ -2,11 +2,12 @@ from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse, Http404
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.views.decorators.http import require_POST
 
 from .forms import InviteForm, ProfileEditForm, RegisterForm
 from .models import Invite, PlayerProfile
-from .utils import get_image_content_type
+from .utils import get_image_content_type, make_qr_svg
 
 
 def register(request, token):
@@ -102,7 +103,11 @@ def invite_list(request):
 def invite_detail(request, token):
     """Show a single invite with QR code, copy link, and share button."""
     invite = get_object_or_404(Invite, token=token, created_by=request.user)
-    return render(request, "accounts/invite_detail.html", {"invite": invite})
+    invite_url = request.build_absolute_uri(
+        reverse("accounts:register", args=[invite.token])
+    )
+    qr_svg = make_qr_svg(invite_url)
+    return render(request, "accounts/invite_detail.html", {"invite": invite, "qr_svg": qr_svg})
 
 
 @login_required
