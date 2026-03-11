@@ -3,6 +3,7 @@ import io
 
 import qrcode
 import qrcode.image.svg
+from django.utils.safestring import mark_safe
 from PIL import Image
 
 # Hard limit on user-uploaded file size (checked before any processing).
@@ -17,11 +18,15 @@ Image.MAX_IMAGE_PIXELS = 50_000_000
 
 
 def make_qr_svg(url: str) -> str:
-    """Generate a QR code as an SVG string for the given URL."""
+    """Generate a QR code as a safe SVG string for the given URL.
+
+    Returns a ``mark_safe`` string so templates can render it without ``|safe``.
+    Only call this with trusted, application-generated URLs.
+    """
     img = qrcode.make(url, image_factory=qrcode.image.svg.SvgPathImage)
     buf = io.BytesIO()
     img.save(buf)
-    return buf.getvalue().decode()
+    return mark_safe(buf.getvalue().decode())
 
 
 def _is_svg(data: bytes) -> bool:
