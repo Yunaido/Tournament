@@ -40,8 +40,8 @@ test.describe("Profile – view", () => {
         await loginAsPlayer(page, "luffy");
         await page.goto("/accounts/profile/");
         // Default: may be an <img> or the default SVG inline; either way an img
-        // We just check the nav contains some img (default or uploaded)
-        await expect(page.locator("nav img")).toBeVisible();
+        // We just check the nav contains the avatar img (rounded-circle)
+        await expect(page.locator("nav img.rounded-circle")).toBeVisible();
     });
 });
 
