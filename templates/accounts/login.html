@@ -1,31 +1,82 @@
 {% extends "base.html" %}
+{% load static %}
 {% block title %}Login{% endblock %}
 {% block content %}
 <div class="row justify-content-center">
     <div class="col-md-5">
-        <div class="card">
+
+        {# -- Password login (primary) -- #}
+        <div class="card mb-3">
             <div class="card-body">
                 <h3 class="card-title mb-3">Login</h3>
-                <form method="post">
+                <form method="post" action="{% url 'accounts:login' %}">
                     {% csrf_token %}
-                    <div class="mb-3">
-                        <label for="id_username" class="form-label">Username</label>
-                        <input type="text" class="form-control" id="id_username" name="username" required autofocus>
+                    {% if form.non_field_errors %}
+                    <div class="alert alert-danger">
+                        {% for error in form.non_field_errors %}{{ error }}{% endfor %}
                     </div>
-                    <div class="mb-3">
-                        <label for="id_password" class="form-label">Password</label>
-                        <input type="password" class="form-control" id="id_password" name="password" required>
-                    </div>
-                    {% if form.errors %}
-                    <div class="alert alert-danger">Invalid username or password.</div>
                     {% endif %}
+                    <div class="mb-3">
+                        <label for="{{ form.username.id_for_label }}" class="form-label">Username</label>
+                        <input type="text" class="form-control {% if form.username.errors %}is-invalid{% endif %}"
+                            id="{{ form.username.id_for_label }}" name="username"
+                            value="{{ form.username.value|default:'' }}" autocomplete="username" autofocus>
+                        {% for error in form.username.errors %}
+                        <div class="invalid-feedback">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    <div class="mb-3">
+                        <label for="{{ form.password.id_for_label }}" class="form-label">Password</label>
+                        <input type="password" class="form-control {% if form.password.errors %}is-invalid{% endif %}"
+                            id="{{ form.password.id_for_label }}" name="password"
+                            autocomplete="current-password">
+                        {% for error in form.password.errors %}
+                        <div class="invalid-feedback">{{ error }}</div>
+                        {% endfor %}
+                    </div>
                     <button type="submit" class="btn btn-primary w-100">Login</button>
                 </form>
-                <p class="mt-3 text-center text-muted">
-                    No account? You need an invite link to register.
-                </p>
             </div>
         </div>
+
+        {# -- divider -- #}
+        <div class="d-flex align-items-center mb-3">
+            <hr class="flex-grow-1">
+            <span class="mx-3 text-muted small">or login another way</span>
+            <hr class="flex-grow-1">
+        </div>
+
+        {# -- Email magic link -- #}
+        <div class="card mb-3">
+            <div class="card-body">
+                <h6 class="card-title mb-2">🔗 Email Login Link</h6>
+                <p class="text-muted small mb-2">Enter your email and we'll send you a one-time login link.</p>
+                <form method="post" action="{% url 'accounts:magic_link_request' %}">
+                    {% csrf_token %}
+                    <div class="input-group">
+                        <input type="email" class="form-control" name="email"
+                            placeholder="your@email.com">
+                        <button type="submit" class="btn btn-outline-secondary">Send Link</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        {# -- Passkey login (shown only if browser supports it) -- #}
+        <div id="passkey-section" class="card mb-3" style="display:none;">
+            <div class="card-body">
+                <button id="passkey-login-btn" class="btn btn-outline-light w-100">
+                    🔑 Login with Passkey
+                </button>
+                <div id="passkey-error" class="alert alert-danger mt-2" style="display:none;"></div>
+            </div>
+        </div>
+
+        <p class="text-center text-muted">
+            No account? You need an invite link to register.
+        </p>
     </div>
 </div>
+
+<script src="{% static 'js/passkey.js' %}"></script>
 {% endblock %}

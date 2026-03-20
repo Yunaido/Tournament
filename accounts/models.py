@@ -112,3 +112,22 @@ class PlayerProfile(models.Model):
         if total == 0:
             return 0.0
         return self.total_match_wins / total
+
+
+class WebAuthnCredential(models.Model):
+    """A registered WebAuthn passkey for passwordless login."""
+
+    user = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name="webauthn_credentials"
+    )
+    name = models.CharField(max_length=100, default="My passkey")
+    credential_id = models.BinaryField(unique=True)
+    public_key = models.BinaryField()
+    sign_count = models.PositiveIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.name} ({self.user})"

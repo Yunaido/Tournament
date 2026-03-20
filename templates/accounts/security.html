@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Security Settings{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="d-flex align-items-center justify-content-between mb-4">
+            <h3 class="mb-0">🔒 Security Settings</h3>
+            <a href="{% url 'accounts:profile' %}" class="btn btn-outline-secondary btn-sm">← Back to Profile</a>
+        </div>
+
+{# ── Passkey offer banner (shown after magic link login if no passkey yet) ── #}
+{% if offer_passkey %}
+<div id="passkey-offer" class="alert alert-info d-flex align-items-center mb-4">
+    <span class="me-3" style="font-size:1.5rem;">🔑</span>
+    <div class="flex-grow-1">
+        <strong>Speed up your next login!</strong><br>
+        Set up a passkey (fingerprint / Face ID) so you can log in instantly next time.
+    </div>
+    <button id="passkey-register-btn" class="btn btn-primary btn-sm ms-3">Set Up Passkey</button>
+</div>
+<div id="passkey-reg-status"></div>
+{% endif %}
+
+        {# ── Email ── #}
+        <div class="card mb-4">
+            <div class="card-header"><strong>✉️ Email Address</strong></div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="change_email">
+                    <div class="mb-3">
+                        <label for="id_email" class="form-label">Email</label>
+                        <input type="email" class="form-control {% if email_form.email.errors %}is-invalid{% endif %}"
+                            id="id_email" name="email" value="{{ email_form.email.value|default_if_none:'' }}"
+                            autocomplete="email">
+                        {% if email_form.email.help_text %}
+                        <div class="form-text">{{ email_form.email.help_text }}</div>
+                        {% endif %}
+                        {% for error in email_form.email.errors %}
+                        <div class="invalid-feedback">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-sm">Update Email</button>
+                </form>
+            </div>
+        </div>
+
+        {# ── Password ── #}
+        <div class="card mb-4">
+            <div class="card-header"><strong>🔑 Password</strong></div>
+            <div class="card-body">
+                {% if has_password %}
+                <p class="text-muted small mb-3">You have a password set. You can change it below.</p>
+                {% else %}
+                <p class="text-muted small mb-3">You don't have a password yet. Set one to enable password login.</p>
+                {% endif %}
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="change_password">
+                    {% if has_password %}
+                    <div class="mb-3">
+                        <label for="id_current_password" class="form-label">Current Password</label>
+                        <input type="password" class="form-control {% if password_form.current_password.errors %}is-invalid{% endif %}"
+                            id="id_current_password" name="current_password" autocomplete="current-password">
+                        {% for error in password_form.current_password.errors %}
+                        <div class="invalid-feedback">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                    <div class="mb-3">
+                        <label for="id_new_password1" class="form-label">New Password</label>
+                        <input type="password" class="form-control {% if password_form.new_password1.errors %}is-invalid{% endif %}"
+                            id="id_new_password1" name="new_password1" autocomplete="new-password">
+                        {% for error in password_form.new_password1.errors %}
+                        <div class="invalid-feedback">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    <div class="mb-3">
+                        <label for="id_new_password2" class="form-label">Confirm New Password</label>
+                        <input type="password" class="form-control {% if password_form.new_password2.errors %}is-invalid{% endif %}"
+                            id="id_new_password2" name="new_password2" autocomplete="new-password">
+                        {% for error in password_form.new_password2.errors %}
+                        <div class="invalid-feedback">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-sm">
+                        {% if has_password %}Change Password{% else %}Set Password{% endif %}
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        {# ── Passkeys ── #}
+        <div class="card mb-4">
+            <div class="card-header"><strong>🔐 Passkeys</strong></div>
+            <div class="card-body">
+                {% if passkeys %}
+                <ul class="list-group list-group-flush mb-3">
+                    {% for pk in passkeys %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center"
+                        style="background:transparent;border-color:var(--bs-border-color);">
+                        <span>{{ pk.name }}</span>
+                        <span class="text-muted small">added {{ pk.created_at|date:"M d, Y" }}</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p class="text-muted mb-3">No passkeys registered yet. Add one for fast, passwordless login.</p>
+                {% endif %}
+                {% if not offer_passkey %}
+                <button id="passkey-register-btn" class="btn btn-outline-light btn-sm">
+                    ➕ Add Passkey
+                </button>
+                <div id="passkey-reg-status"></div>
+                {% endif %}
+            </div>
+        </div>
+
+    </div>
+</div>
+<script src="{% static 'js/passkey.js' %}"></script>
+{% endblock %}

@@ -1,3 +1,5 @@
+from urllib.parse import urlparse
+
 from django import forms
 
 from accounts.utils import process_image
@@ -21,6 +23,15 @@ class TournamentForm(forms.ModelForm):
             return process_image(f)
         except ValueError as exc:
             raise forms.ValidationError(str(exc))
+
+    def clean_location_url(self):
+        url = self.cleaned_data.get("location_url")
+        if not url:
+            return url
+        parsed = urlparse(url)
+        if parsed.scheme not in ("http", "https"):
+            raise forms.ValidationError("Only http and https URLs are allowed.")
+        return url
 
     class Meta:
         model = Tournament
