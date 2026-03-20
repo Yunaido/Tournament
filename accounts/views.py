@@ -2,6 +2,7 @@ import json
 
 import sesame.utils
 from django.conf import settings
+from django.contrib import messages
 from django.contrib.auth import authenticate
 from django.contrib.auth import login as auth_login
 from django.contrib.auth.decorators import login_required
@@ -126,6 +127,7 @@ def serve_avatar(request, pk):
     data = bytes(profile.avatar_data)
     response = HttpResponse(data, content_type=get_image_content_type(data))
     response["X-Content-Type-Options"] = "nosniff"
+    response["Cache-Control"] = "private, no-cache"
     return response
 
 
@@ -148,7 +150,6 @@ def security(request):
                 user.save()
                 # Re-authenticate so the session isn't invalidated
                 auth_login(request, user, backend="django.contrib.auth.backends.ModelBackend")
-                from django.contrib import messages
                 messages.success(request, "Password updated.")
                 return redirect("accounts:security")
 
@@ -157,7 +158,6 @@ def security(request):
             if email_form.is_valid():
                 user.email = email_form.cleaned_data["email"]
                 user.save(update_fields=["email"])
-                from django.contrib import messages
                 messages.success(request, "Email updated.")
                 return redirect("accounts:security")
 
@@ -290,7 +290,10 @@ def passkey_register_complete(request):
     """Complete the passkey registration ceremony."""
     import base64
 
-    body = json.loads(request.body)
+    try:
+        body = json.loads(request.body)
+    except (json.JSONDecodeError, ValueError):
+        return JsonResponse({"error": "Invalid request."}, status=400)
     challenge_b64 = request.session.pop("webauthn_reg_challenge", None)
     if not challenge_b64:
         return JsonResponse({"error": "No registration in progress."}, status=400)
@@ -304,8 +307,8 @@ def passkey_register_complete(request):
             expected_rp_id=settings.WEBAUTHN_RP_ID,
             expected_origin=settings.WEBAUTHN_ORIGIN,
         )
-    except Exception as e:
-        return JsonResponse({"error": str(e)}, status=400)
+    except Exception:
+        return JsonResponse({"error": "Registration verification failed."}, status=400)
 
     # Sanitize the user-supplied passkey name
     raw_name = body.get("name", "My passkey")
@@ -345,7 +348,10 @@ def passkey_login_complete(request):
     """Complete the passkey authentication ceremony and log the user in."""
     import base64
 
-    body = json.loads(request.body)
+    try:
+        body = json.loads(request.body)
+    except (json.JSONDecodeError, ValueError):
+        return JsonResponse({"error": "Invalid request."}, status=400)
     challenge_b64 = request.session.pop("webauthn_auth_challenge", None)
     if not challenge_b64:
         return JsonResponse({"error": "No authentication in progress."}, status=400)
@@ -362,7 +368,7 @@ def passkey_login_complete(request):
     try:
         cred = WebAuthnCredential.objects.get(credential_id=cred_id_bytes)
     except WebAuthnCredential.DoesNotExist:
-        return JsonResponse({"error": "Unknown credential."}, status=400)
+        return JsonResponse({"error": "Invalid credential."}, status=400)
 
     try:
         verification = verify_authentication_response(
@@ -373,8 +379,8 @@ def passkey_login_complete(request):
             credential_public_key=bytes(cred.public_key),
             credential_current_sign_count=cred.sign_count,
         )
-    except Exception as e:
-        return JsonResponse({"error": str(e)}, status=400)
+    except Exception:
+        return JsonResponse({"error": "Authentication failed."}, status=400)
 
     cred.sign_count = verification.new_sign_count
     cred.save(update_fields=["sign_count"])
