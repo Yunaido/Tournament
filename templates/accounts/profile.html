@@ -1,8 +1,11 @@
 {% extends "base.html" %}
+{% load static %}
 {% block title %}Profile{% endblock %}
 {% block content %}
 <div class="row justify-content-center">
     <div class="col-md-8">
+
+        {# ── Profile header ── #}
         <div class="card mb-4">
             <div class="card-body">
                 <div class="d-flex align-items-center gap-3 mb-3">
@@ -16,13 +19,17 @@
                         </p>
                         {% endif %}
                     </div>
-                    </div>
-                    
-                    <a href="{% url 'accounts:profile_edit' %}" class="btn btn-outline-light btn-sm mb-3">✏️ Edit Profile</a>
+                </div>
 
-                <div class="row mt-3">
+                <div class="d-flex gap-2 mb-3">
+                    <a href="{% url 'accounts:profile_edit' %}" class="btn btn-outline-light btn-sm">✏️ Edit Profile</a>
+                    <a href="{% url 'accounts:security' %}" class="btn btn-outline-light btn-sm">🔒 Security</a>
+                </div>
+
+                {# ── Stats ── #}
+                <div class="row">
                     <div class="col-md-6">
-                        <table class="table table-sm">
+                        <table class="table table-sm mb-0">
                             <tr>
                                 <th>Tournaments Played</th>
                                 <td>{{ user.profile.tournaments_played }}</td>
@@ -46,7 +53,7 @@
                         </table>
                     </div>
                 </div>
-                <a href="{% url 'match_history' pk=user.pk %}" class="btn btn-outline-primary">
+                <a href="{% url 'match_history' pk=user.pk %}" class="btn btn-outline-primary mt-3">
                     View Full Match History
                 </a>
             </div>
@@ -69,6 +76,7 @@
                 {% endfor %}
             </ul>
         </div>
+
     </div>
 </div>
 {% endblock %}

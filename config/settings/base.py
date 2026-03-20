@@ -57,8 +57,29 @@ TEMPLATES = [
 WSGI_APPLICATION = "config.wsgi.application"
 
 AUTH_PASSWORD_VALIDATORS = [
+    {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
     {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
+    {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
+    {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
 ]
+
+AUTHENTICATION_BACKENDS = [
+    "django.contrib.auth.backends.ModelBackend",
+    "sesame.backends.ModelBackend",
+]
+
+# django-sesame: short-lived magic login links sent via email.
+SESAME_MAX_AGE = 900  # 15 minutes
+SESAME_ONE_TOKEN = True
+
+# Email — console backend by default, override in production.py for real SMTP.
+EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "OP TCG Tournament <noreply@localhost>")
+
+# WebAuthn / Passkeys
+WEBAUTHN_RP_ID = os.environ.get("WEBAUTHN_RP_ID", "localhost")
+WEBAUTHN_RP_NAME = "OP TCG Tournament"
+WEBAUTHN_ORIGIN = os.environ.get("WEBAUTHN_ORIGIN", "http://localhost:8000")
 
 LANGUAGE_CODE = "en-us"
 TIME_ZONE = "Europe/Berlin"
@@ -83,3 +104,8 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 LOGIN_URL = "/accounts/login/"
 LOGIN_REDIRECT_URL = "/"
 LOGOUT_REDIRECT_URL = "/"
+
+SESSION_COOKIE_HTTPONLY = True
+
+# Email verification tokens expire after 24 hours.
+EMAIL_VERIFICATION_MAX_AGE = 86400

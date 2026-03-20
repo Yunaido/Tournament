@@ -12,9 +12,23 @@ services:
       - POSTGRES_HOST=db
       - POSTGRES_PORT=5432
       - ALLOWED_HOSTS=localhost,127.0.0.1
+      - EMAIL_HOST=mail
+      - EMAIL_PORT=1025
+      - EMAIL_USE_TLS=0
+      - ACCOUNT_DEFAULT_HTTP_PROTOCOL=http
+      - SITE_DOMAIN=localhost:8000
     depends_on:
       db:
         condition: service_healthy
+      mail:
+        condition: service_started
+    restart: unless-stopped
+
+  mail:
+    image: axllent/mailpit:latest
+    ports:
+      - "8025:8025"
+      - "1025:1025"
     restart: unless-stopped
 
   db:

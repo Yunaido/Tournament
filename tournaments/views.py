@@ -122,6 +122,7 @@ def serve_logo(request, pk):
     data = bytes(tournament.logo_data)
     response = HttpResponse(data, content_type=get_image_content_type(data))
     response["X-Content-Type-Options"] = "nosniff"
+    response["Cache-Control"] = "private, no-cache"
     return response
 
 

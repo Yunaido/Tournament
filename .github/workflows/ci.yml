@@ -116,6 +116,7 @@ jobs:
         working-directory: e2e
         env:
           BASE_URL: http://localhost:8000
+          COMPOSE_FILE: compose.ci.yml
         run: npx playwright test
 
       - name: Upload test results
