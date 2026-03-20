@@ -15,6 +15,11 @@
                         {% if field.name == 'avatar' %}
                         <input type="file" accept="image/*" class="form-control {% if field.errors %}is-invalid{% endif %}"
                             id="{{ field.id_for_label }}" name="{{ field.html_name }}">
+                        {% elif field.field.widget.input_type == 'password' %}
+                        <input type="password"
+                            class="form-control {% if field.errors %}is-invalid{% endif %}"
+                            id="{{ field.id_for_label }}" name="{{ field.html_name }}"
+                            autocomplete="{% if field.name == 'password1' %}new-password{% else %}new-password{% endif %}">
                         {% else %}
                         <input type="{{ field.field.widget.input_type|default:'text' }}"
                             class="form-control {% if field.errors %}is-invalid{% endif %}"
@@ -30,6 +35,11 @@
                         {% endfor %}
                     </div>
                     {% endfor %}
+                    {% if form.non_field_errors %}
+                    <div class="alert alert-danger">
+                        {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+                    </div>
+                    {% endif %}
                     <button type="submit" class="btn btn-primary w-100">Register</button>
                 </form>
                 <p class="mt-3 text-center">

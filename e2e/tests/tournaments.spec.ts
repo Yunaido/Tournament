@@ -184,6 +184,22 @@ test.describe("Tournaments – location", () => {
         await expect(page.locator("body")).toContainText(name);
         await expect(page.locator("body")).toContainText("Test Venue");
     });
+
+    test("javascript: URL in location_url is rejected", async ({ page }) => {
+        await loginAsAdmin(page);
+        await page.goto("/tournaments/create/");
+        const name = `XSS Test ${Date.now()}`;
+        await page.fill("#id_name", name);
+        await page.fill("#id_date", "2026-12-01");
+        await page.fill("#id_location_name", "Evil Venue");
+        // Django URLField may block javascript: at the browser level, so fill via JS
+        await page.locator("#id_location_url").evaluate(
+            (el: HTMLInputElement) => { el.value = "javascript:alert(1)"; }
+        );
+        await page.locator('.card-body button[type="submit"]').click();
+        // Should stay on the create form with an error
+        await expect(page).toHaveURL(/create/);
+    });
 });
 
 test.describe("Tournaments – share link", () => {
@@ -416,6 +432,76 @@ test.describe("Tournaments – CSP header", () => {
         expect(csp).toBeTruthy();
     });
 });
+
+test.describe("Tournaments – serve logo", () => {
+    test("tournament with uploaded logo serves image via /logo/ URL", async ({ page }) => {
+        await loginAsAdmin(page);
+        // Create a tournament with a logo
+        await page.goto("/tournaments/create/");
+        const name = `Logo Serve ${Date.now()}`;
+        await page.fill("#id_name", name);
+        await page.fill("#id_date", "2026-06-01");
+
+        const pngBase64 = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
+        const pngBuffer = Buffer.from(pngBase64, "base64");
+        const tmpPath = path.join("/tmp", `logo_serve_${Date.now()}.png`);
+        fs.writeFileSync(tmpPath, pngBuffer);
+        await page.setInputFiles("#id_logo", tmpPath);
+        await page.locator('.card-body button[type="submit"]').click();
+        await expect(page).not.toHaveURL(/create/);
+        fs.rmSync(tmpPath);
+
+        // Extract the tournament PK from the URL
+        const pk = page.url().match(/tournaments\/(\d+)/)?.[1];
+        expect(pk).toBeTruthy();
+
+        // Fetch the logo endpoint directly
+        const logoRes = await page.request.get(`/tournaments/${pk}/logo/`);
+        expect(logoRes.status()).toBe(200);
+        expect(logoRes.headers()["content-type"]).toContain("image/");
+        expect(logoRes.headers()["x-content-type-options"]).toBe("nosniff");
+    });
+
+    test("tournament without logo returns 404 on /logo/ URL", async ({ page }) => {
+        await loginAsAdmin(page);
+        // Create a tournament WITHOUT a logo
+        await page.goto("/tournaments/create/");
+        const name = `No Logo ${Date.now()}`;
+        await page.fill("#id_name", name);
+        await page.fill("#id_date", "2026-06-01");
+        await page.locator('.card-body button[type="submit"]').click();
+        await expect(page).not.toHaveURL(/create/);
+
+        const pk = page.url().match(/tournaments\/(\d+)/)?.[1];
+        expect(pk).toBeTruthy();
+
+        const logoRes = await page.request.get(`/tournaments/${pk}/logo/`);
+        expect(logoRes.status()).toBe(404);
+    });
+});
+
+test.describe("Tournaments – htmx standings partial", () => {
+    test("standings partial endpoint returns table content", async ({ page }) => {
+        // The finished tournament (East Blue Showdown) has standings
+        await page.goto("/");
+        const card = page.locator(".card", { hasText: "East Blue Showdown" });
+        const link = card.locator('a:has-text("Results"), a:has-text("View")');
+        await link.click();
+
+        // Get the PK from URL
+        const pk = page.url().match(/tournaments\/(\d+)/)?.[1];
+        expect(pk).toBeTruthy();
+
+        // Fetch the htmx partial
+        const res = await page.request.get(`/tournaments/${pk}/standings-partial/`);
+        expect(res.status()).toBe(200);
+        const html = await res.text();
+        // Should contain table elements and player names
+        expect(html).toContain("<table");
+        expect(html).toContain("<tr");
+    });
+});
+
 test.describe("Tournaments – organizer info", () => {
     test("list cards show organizer name", async ({ page }) => {
         await page.goto("/");

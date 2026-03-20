@@ -35,6 +35,13 @@ test.describe("Profile – view", () => {
         await expect(histLink).toBeVisible();
     });
 
+    test("profile page has a link to security settings", async ({ page }) => {
+        await loginAsPlayer(page, "luffy");
+        await page.goto("/accounts/profile/");
+        const secLink = page.locator('a[href*="/security/"], a:has-text("Security")');
+        await expect(secLink).toBeVisible();
+    });
+
     test("avatar img is shown in navbar after uploading", async ({ page }) => {
         // After any upload, the navbar should have an <img> with the avatar src
         await loginAsPlayer(page, "luffy");

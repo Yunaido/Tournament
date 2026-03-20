@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Invalid Login Link{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-5 text-center">
+        <div class="card border-danger">
+            <div class="card-body py-4">
+                <h3 class="card-title text-danger mb-3">Invalid or Expired Link</h3>
+                <p class="text-muted">
+                    This login link is invalid or has already expired.
+                    Login links can only be used once and expire after 15 minutes.
+                </p>
+                <a href="{% url 'accounts:login' %}" class="btn btn-primary mt-2">Request a New Link</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
