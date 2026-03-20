@@ -239,34 +239,66 @@ test.describe("Auth – registration via invite", () => {
         await expect(page.locator(".invalid-feedback, .alert-danger")).toBeVisible();
     });
 
-    test("successful registration without password logs the new user in", async ({ page }) => {
+    test("successful registration without password sends verification email", async ({ page }) => {
+        await clearMailpit(page);
         const token = await getDevInviteToken(page);
         if (!token) return test.skip();
         await page.goto(`/accounts/register/${token}/`);
         const uniqueName = `newplayer_${Date.now()}`;
+        const email = `${uniqueName}@test.example`;
         await page.fill("#id_username", uniqueName);
-        await page.fill("#id_email", `${uniqueName}@test.example`);
+        await page.fill("#id_email", email);
         await page.fill("#id_display_name", "Fresh Player");
         await page.click('button[type="submit"]');
-        await expect(page).toHaveURL("/");
+
+        // Should show "check your email" page, NOT log in
+        await expect(page.locator("h3")).toContainText("Check Your Email");
+        await expect(page.locator("body")).toContainText(email);
+
+        // Verify the email was sent via Mailpit
+        await page.waitForTimeout(500);
+        const body = await getLatestMailForRecipient(page, email);
+        expect(body).not.toBeNull();
+        expect(body).toContain("verify");
+
+        // Extract the verification URL and click it
+        const urlMatch = body!.match(/http:\/\/\S+/);
+        expect(urlMatch).not.toBeNull();
+        await page.goto(urlMatch![0]);
+
+        // Should now be logged in
+        await page.waitForURL("/");
         await expect(page.locator("nav")).toContainText("Fresh Player");
     });
 
-    test("successful registration WITH password allows password login", async ({ page }) => {
+    test("successful registration WITH password verifies email then allows password login", async ({ page }) => {
+        await clearMailpit(page);
         const token = await getDevInviteToken(page);
         if (!token) return test.skip();
         const uniqueName = `pwplayer_${Date.now()}`;
+        const email = `${uniqueName}@test.example`;
         const password = "MySecurePass1!";
 
         // Register with a password
         await page.goto(`/accounts/register/${token}/`);
         await page.fill("#id_username", uniqueName);
-        await page.fill("#id_email", `${uniqueName}@test.example`);
+        await page.fill("#id_email", email);
         await page.fill("#id_display_name", "PW Player");
         await page.fill("#id_password1", password);
         await page.fill("#id_password2", password);
         await page.click('button[type="submit"]');
-        await expect(page).toHaveURL("/");
+
+        // Should show "check your email" page
+        await expect(page.locator("h3")).toContainText("Check Your Email");
+
+        // Click verification link from email
+        await page.waitForTimeout(500);
+        const body = await getLatestMailForRecipient(page, email);
+        expect(body).not.toBeNull();
+        const urlMatch = body!.match(/http:\/\/\S+/);
+        expect(urlMatch).not.toBeNull();
+        await page.goto(urlMatch![0]);
+        await page.waitForURL("/");
         await expect(page.locator("nav")).toContainText("PW Player");
 
         // Logout, then log back in via password
@@ -357,3 +389,43 @@ async function getDevInviteToken(page: import("@playwright/test").Page): Promise
     await logout(page);
     return token;
 }
+
+// ── Email Verification ───────────────────────────────────────────────────────
+
+test.describe("Auth – email verification", () => {
+    test("used verification link shows invalid page", async ({ page }) => {
+        await clearMailpit(page);
+        const token = await getDevInviteToken(page);
+        if (!token) return test.skip();
+        const uniqueName = `usedlink_${Date.now()}`;
+        const email = `${uniqueName}@test.example`;
+
+        await page.goto(`/accounts/register/${token}/`);
+        await page.fill("#id_username", uniqueName);
+        await page.fill("#id_email", email);
+        await page.fill("#id_display_name", "Used Link");
+        await page.click('button[type="submit"]');
+        await expect(page.locator("h3")).toContainText("Check Your Email");
+
+        await page.waitForTimeout(500);
+        const body = await getLatestMailForRecipient(page, email);
+        expect(body).not.toBeNull();
+        const urlMatch = body!.match(/http:\/\/\S+/);
+        expect(urlMatch).not.toBeNull();
+        const verifyUrl = urlMatch![0];
+
+        // First click — should activate
+        await page.goto(verifyUrl);
+        await page.waitForURL("/");
+
+        // Logout and try the same link again
+        await logout(page);
+        await page.goto(verifyUrl);
+        await expect(page.locator("h3")).toContainText(/invalid|expired/i);
+    });
+
+    test("nonexistent verification token returns 404", async ({ page }) => {
+        const response = await page.goto("/accounts/verify/00000000-0000-0000-0000-000000000000/");
+        expect(response?.status()).toBe(404);
+    });
+});

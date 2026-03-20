@@ -26,6 +26,11 @@
         <div class="card mb-4">
             <div class="card-header"><strong>✉️ Email Address</strong></div>
             <div class="card-body">
+                {% if pending_email %}
+                <div class="alert alert-info small mb-3">
+                    📬 A verification link has been sent to <strong>{{ pending_email.email }}</strong>. Check your inbox to confirm the change.
+                </div>
+                {% endif %}
                 <form method="post">
                     {% csrf_token %}
                     <input type="hidden" name="action" value="change_email">

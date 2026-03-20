@@ -7,6 +7,7 @@ app_name = "accounts"
 
 urlpatterns = [
     path("register/<uuid:token>/", views.register, name="register"),
+    path("verify/<uuid:token>/", views.verify_email, name="verify_email"),
     path("login/", views.login_view, name="login"),
     path("login/email/", views.magic_link_request, name="magic_link_request"),
     path("login/email/verify/", views.magic_login, name="magic_login"),

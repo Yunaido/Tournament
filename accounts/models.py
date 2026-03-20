@@ -3,6 +3,7 @@ import uuid
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.db import models
+from django.db.models import F
 from django.utils import timezone
 
 
@@ -50,8 +51,43 @@ class Invite(models.Model):
         return True
 
     def use(self):
-        self.times_used += 1
-        self.save(update_fields=["times_used"])
+        Invite.objects.filter(pk=self.pk).update(times_used=F("times_used") + 1)
+        self.refresh_from_db(fields=["times_used"])
+
+
+class EmailVerification(models.Model):
+    """
+    Token-based email verification for registration and email changes.
+    Stored tokens expire after EMAIL_VERIFICATION_MAX_AGE seconds.
+    """
+
+    class Purpose(models.TextChoices):
+        REGISTRATION = "REGISTRATION", "Registration"
+        EMAIL_CHANGE = "EMAIL_CHANGE", "Email Change"
+
+    token = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="email_verifications",
+    )
+    email = models.EmailField(help_text="The email address to verify.")
+    purpose = models.CharField(max_length=15, choices=Purpose.choices)
+    created_at = models.DateTimeField(auto_now_add=True)
+    used = models.BooleanField(default=False)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.purpose} verification for {self.email}"
+
+    @property
+    def is_valid(self) -> bool:
+        if self.used:
+            return False
+        max_age = getattr(settings, "EMAIL_VERIFICATION_MAX_AGE", 86400)
+        return (timezone.now() - self.created_at).total_seconds() < max_age
 
 
 class PlayerProfile(models.Model):

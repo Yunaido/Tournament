@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { expectAlert, loginAsPlayer, loginWithPassword, logout, PLAYER_PASSWORD } from "./helpers";
+import { clearMailpit, expectAlert, getLatestMailForRecipient, loginAsPlayer, loginWithPassword, logout, PLAYER_PASSWORD } from "./helpers";
 
 test.describe("Security – page structure", () => {
     test("security page loads and shows all sections", async ({ page }) => {
@@ -32,20 +32,43 @@ test.describe("Security – email", () => {
         await expect(emailInput).toHaveValue("luffy@crew.dev");
     });
 
-    test("can change email address", async ({ page }) => {
+    test("can change email address via verification", async ({ page }) => {
+        await clearMailpit(page);
         await loginAsPlayer(page, "brook");
         await page.goto("/accounts/profile/security/");
         const newEmail = `brook_${Date.now()}@crew.dev`;
         await page.fill("#id_email", newEmail);
         await page.locator('button:has-text("Update Email")').click();
+        await expect(page.locator(".alert-success")).toContainText("verification link has been sent");
+
+        // Email should NOT be changed yet
+        await expect(page.locator("#id_email")).toHaveValue("brook@crew.dev");
+
+        // Pending verification banner should be visible
+        await expect(page.locator(".alert-info")).toContainText(newEmail);
+
+        // Click the verification link from email
+        await page.waitForTimeout(500);
+        const body = await getLatestMailForRecipient(page, newEmail);
+        expect(body).not.toBeNull();
+        const urlMatch = body!.match(/http:\/\/\S+/);
+        expect(urlMatch).not.toBeNull();
+        await page.goto(urlMatch![0]);
         await expectAlert(page, "Email updated");
 
         // Verify the new email is shown
         await expect(page.locator("#id_email")).toHaveValue(newEmail);
 
-        // Restore original
+        // Restore original via another verification
+        await clearMailpit(page);
         await page.fill("#id_email", "brook@crew.dev");
         await page.locator('button:has-text("Update Email")').click();
+        await page.waitForTimeout(500);
+        const restoreBody = await getLatestMailForRecipient(page, "brook@crew.dev");
+        expect(restoreBody).not.toBeNull();
+        const restoreUrlMatch = restoreBody!.match(/http:\/\/\S+/);
+        expect(restoreUrlMatch).not.toBeNull();
+        await page.goto(restoreUrlMatch![0]);
     });
 
     test("duplicate email is rejected", async ({ page }) => {

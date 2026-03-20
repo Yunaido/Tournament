@@ -1,0 +1,9 @@
+Hi {{ user.profile.display_name }},
+
+You requested to change your email address to {{ new_email }}. Click the link below to confirm:
+
+{{ verify_url }}
+
+This link expires in 24 hours. If you didn't request this change, you can safely ignore this email.
+
+— OP TCG Tournament

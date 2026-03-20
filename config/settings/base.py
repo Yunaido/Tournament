@@ -106,3 +106,6 @@ LOGIN_REDIRECT_URL = "/"
 LOGOUT_REDIRECT_URL = "/"
 
 SESSION_COOKIE_HTTPONLY = True
+
+# Email verification tokens expire after 24 hours.
+EMAIL_VERIFICATION_MAX_AGE = 86400
