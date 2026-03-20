@@ -14,10 +14,10 @@ const PROJECT_ROOT = path.resolve(__dirname, "..", "..");
 
 /**
  * Get a one-time magic login URL for the given username.
- * Calls the Django management command inside the Docker container.
+ * Calls the Django management command inside the running web container.
  */
 function getMagicLoginUrl(username: string): string {
-    const cmd = `docker compose run --rm --entrypoint "" -v "${PROJECT_ROOT}:/app" web python manage.py get_login_url ${username}`;
+    const cmd = `docker compose exec -T web python manage.py get_login_url ${username}`;
     return execSync(cmd, { cwd: PROJECT_ROOT, encoding: "utf-8" }).trim();
 }
 
