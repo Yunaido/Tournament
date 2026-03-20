@@ -40,9 +40,10 @@ class TournamentForm(forms.ModelForm):
 
     class Meta:
         model = Tournament
-        fields = ("name", "description", "location_name", "location_url", "event_type", "date", "max_rounds")
+        fields = ("name", "description", "location_name", "location_url", "event_type", "date", "start_time", "max_rounds")
         widgets = {
             "date": forms.DateInput(attrs={"type": "date"}),
+            "start_time": forms.TimeInput(attrs={"type": "time"}),
             "description": forms.Textarea(attrs={"rows": 3}),
             "location_name": forms.TextInput(attrs={"placeholder": "e.g. Card Shop Berlin"}),
             "location_url": forms.URLInput(attrs={"placeholder": "https://maps.google.com/..."}),

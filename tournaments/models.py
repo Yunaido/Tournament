@@ -71,6 +71,11 @@ class Tournament(models.Model):
     )
     created_at = models.DateTimeField(auto_now_add=True)
     date = models.DateField(default=timezone.now)
+    start_time = models.TimeField(
+        null=True,
+        blank=True,
+        help_text="Optional start time of the tournament.",
+    )
     status = models.CharField(
         max_length=10,
         choices=Status.choices,
