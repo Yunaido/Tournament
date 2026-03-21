@@ -19,7 +19,7 @@ from django.core.management.base import BaseCommand
 from django.utils import timezone
 
 from accounts.models import Invite, PlayerProfile
-from tournaments.models import Match, Round, Tournament, TournamentPlayer
+from tournaments.models import EventType, Match, Round, Tournament, TournamentPlayer
 
 
 # ── Player definitions ───────────────────────────────────────────
@@ -89,11 +89,13 @@ class Command(BaseCommand):
             Invite.objects.all().delete()
             PlayerProfile.objects.all().delete()
             User.objects.filter(is_superuser=False).delete()
+            EventType.objects.all().delete()
             self.stdout.write(self.style.WARNING("  Flushed."))
 
         admin = self._ensure_admin()
         players = self._create_players(admin)
         self._create_invite(admin)
+        self._create_event_types()
         self._create_finished_tournament(admin, players[:6])
         self._create_active_tournament(admin, players)
         self._create_setup_tournament(admin, players[:3])
@@ -142,6 +144,26 @@ class Command(BaseCommand):
             users.append(user)
         return users
 
+    def _create_event_types(self):
+        """Create default event types."""
+        defaults = [
+            {"name": "Casual", "accent_color": "", "sort_order": 0},
+            {"name": "Competitive", "accent_color": "#118ab2", "sort_order": 1},
+            {"name": "Championship", "accent_color": "#e63946", "sort_order": 2},
+            {"name": "Draft", "accent_color": "#6a0572", "sort_order": 3},
+            {"name": "Other", "accent_color": "#6c757d", "sort_order": 4},
+        ]
+        for d in defaults:
+            obj, created = EventType.objects.get_or_create(
+                name=d["name"],
+                defaults={
+                    "accent_color": d["accent_color"],
+                    "sort_order": d["sort_order"],
+                },
+            )
+            if created:
+                self.stdout.write(f"  Created event type: {d['name']}")
+
     def _create_invite(self, admin: User) -> Invite:
         """Create an active invite link from admin."""
         invite, created = Invite.objects.get_or_create(
@@ -183,6 +205,7 @@ class Command(BaseCommand):
             created_by=admin,
             date=timezone.now().date() - timedelta(days=7),
             status=Tournament.Status.FINISHED,
+            event_type=EventType.objects.get(name="Championship"),
             max_rounds=3,
             current_round=3,
             logo_data=_make_logo_svg(name, TOURNAMENT_COLORS[name]),
@@ -260,6 +283,7 @@ class Command(BaseCommand):
             status=Tournament.Status.ACTIVE,
             location_name="Grand Line Card Shop, Sabaody",
             location_url="https://maps.google.com/?q=Grand+Line+Card+Shop",
+            event_type=EventType.objects.get(name="Competitive"),
             max_rounds=3,
             current_round=1,
             logo_data=_make_logo_svg(name, TOURNAMENT_COLORS[name]),
@@ -310,6 +334,7 @@ class Command(BaseCommand):
             created_by=admin,
             date=timezone.now().date() + timedelta(days=3),
             status=Tournament.Status.SETUP,
+            event_type=EventType.objects.get(name="Casual"),
             location_name="Baratie Restaurant, East Blue",
             logo_data=_make_logo_svg(name, TOURNAMENT_COLORS[name]),
         )

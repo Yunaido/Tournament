@@ -25,6 +25,13 @@
                         <textarea class="form-control {% if field.errors %}is-invalid{% endif %}"
                             id="{{ field.id_for_label }}" name="{{ field.html_name }}"
                             rows="3">{{ field.value|default_if_none:'' }}</textarea>
+                        {% elif field.field.widget.input_type == 'select' %}
+                        <select class="form-control {% if field.errors %}is-invalid{% endif %}"
+                            id="{{ field.id_for_label }}" name="{{ field.html_name }}">
+                            {% for val, label in field.field.choices %}
+                            <option value="{{ val }}" {% if field.value == val %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
                         {% else %}
                         <input type="{{ field.field.widget.input_type|default:'text' }}"
                             class="form-control {% if field.errors %}is-invalid{% endif %}"

@@ -13,7 +13,7 @@
 <div class="row g-3 mb-4">
     {% for t in active_tournaments %}
     <div class="col-md-4">
-        <div class="card h-100">
+        <div class="card h-100" {% if t.accent_color %}style="border-color:{{ t.accent_color }};border-width:2px;"{% endif %}>
             <div class="card-body">
                 <div class="d-flex align-items-center gap-2 mb-2">
                     <img src="{{ t.logo_url }}" alt="" class="rounded" width="40" height="40" style="object-fit:cover;">
@@ -24,6 +24,9 @@
                     <span class="badge bg-{% if t.status == 'SETUP' %}info{% else %}success{% endif %}">
                         {{ t.get_status_display }}
                     </span>
+                    {% if t.event_type.accent_color %}
+                    <span class="badge" style="background-color:{{ t.accent_color }};">{{ t.event_type }}</span>
+                    {% endif %}
                     <small class="text-muted">{{ t.num_players }} players</small>
                     {% if t.status == 'ACTIVE' %}
                     <small class="text-muted">• Round {{ t.current_round }}/{{ t.computed_max_rounds }}</small>
@@ -54,7 +57,7 @@
 <div class="row g-3">
     {% for t in finished_tournaments %}
     <div class="col-md-4">
-        <div class="card h-100 border-secondary">
+        <div class="card h-100" {% if t.accent_color %}style="border-color:{{ t.accent_color }};border-width:2px;"{% else %}style="border-color:var(--bs-secondary);"{% endif %}>
             <div class="card-body">
                 <div class="d-flex align-items-center gap-2 mb-2">
                     <img src="{{ t.logo_url }}" alt="" class="rounded" width="40" height="40" style="object-fit:cover;">
@@ -62,6 +65,9 @@
                 </div>
                 <p class="card-text text-muted">{{ t.date }}</p>
                 <span class="badge bg-secondary">Finished</span>
+                {% if t.event_type.accent_color %}
+                <span class="badge" style="background-color:{{ t.accent_color }};">{{ t.event_type }}</span>
+                {% endif %}
                 <small class="text-muted">{{ t.num_players }} players</small>
                 <small class="text-muted mt-1 d-block">by {{ t.created_by.profile.display_name }}</small>
                 {% if user.is_authenticated and t.location_name %}
