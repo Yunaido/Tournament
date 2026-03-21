@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Verify Your Email{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6 text-center">
+        <h3 class="mb-3">📧 Check Your Email</h3>
+        <p>We've sent a verification link to <strong>{{ email }}</strong>.</p>
+        <p>Click the link in the email to activate your account.</p>
+        <p class="text-muted small mt-4">The link expires in 24 hours.</p>
+        <a href="{% url 'accounts:login' %}" class="btn btn-outline-secondary mt-2">← Back to Login</a>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}Invalid Link{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6 text-center">
+        <h3 class="mb-3">⚠️ Invalid or Expired Link</h3>
+        <p>This verification link is no longer valid. It may have expired or already been used.</p>
+        <a href="{% url 'accounts:login' %}" class="btn btn-primary mt-3">Go to Login</a>
+    </div>
+</div>
+{% endblock %}

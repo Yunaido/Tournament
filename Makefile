@@ -90,6 +90,6 @@ e2e-debug:
 # ── full test run ─────────────────────────────────────────────────────────────
 # Wipe the DB, seed fresh data, then run the entire Playwright suite.
 # This guarantees a known database state for every CI / local test run.
-test: flush e2e
+test: flush restart e2e
 	@echo ""
 	@echo "$(GREEN)$(BOLD)✓ All E2E tests complete$(RESET)"
