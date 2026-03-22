@@ -22,7 +22,7 @@ class ContentSecurityPolicyMiddleware:
         "style-src 'self' https://cdn.jsdelivr.net 'unsafe-inline'",
         "img-src 'self' data:",
         "font-src 'self' https://cdn.jsdelivr.net",
-        "connect-src 'self'",
+        "connect-src 'self' https://cdn.jsdelivr.net",
         "form-action 'self'",
         "frame-ancestors 'none'",
         "base-uri 'self'",
