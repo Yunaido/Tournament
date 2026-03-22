@@ -26,7 +26,9 @@
                 </p>
 
                 {# ── QR Code (server-rendered) ── #}
-                <div id="qrcode" class="mb-3 d-flex justify-content-center">{{ qr_svg }}</div>
+                <div id="qrcode" class="mb-3 d-flex justify-content-center">
+                    <div class="bg-white rounded p-2 d-inline-block">{{ qr_svg }}</div>
+                </div>
 
                 {# ── Invite URL ── #}
                 <div class="input-group mb-3">

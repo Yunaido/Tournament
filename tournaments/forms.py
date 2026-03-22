@@ -3,12 +3,17 @@ from urllib.parse import urlparse
 from django import forms
 
 from accounts.utils import process_image
-from .models import Tournament
+from .models import EventType, Tournament
 
 _ACCEPT = "image/jpeg,image/png,image/gif,image/webp"
 
 
 class TournamentForm(forms.ModelForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["event_type"].empty_label = None
+        self.fields["event_type"].queryset = EventType.objects.all()
+
     logo = forms.FileField(
         required=False,
         help_text="Optional tournament logo (JPEG, PNG, GIF, or WebP, max 5 MB).",
@@ -35,7 +40,7 @@ class TournamentForm(forms.ModelForm):
 
     class Meta:
         model = Tournament
-        fields = ("name", "description", "location_name", "location_url", "date", "max_rounds")
+        fields = ("name", "description", "location_name", "location_url", "event_type", "date", "max_rounds")
         widgets = {
             "date": forms.DateInput(attrs={"type": "date"}),
             "description": forms.Textarea(attrs={"rows": 3}),
