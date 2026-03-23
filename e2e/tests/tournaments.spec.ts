@@ -242,9 +242,9 @@ test.describe("Tournaments – start time", () => {
         // leave start_time empty
         await page.locator('.card-body button[type="submit"]').click();
         // date should appear
-        await expect(page.locator("body")).toContainText("July 1, 2026");
+        await expect(page.locator("body")).toContainText("01.07.2026");
         // time should NOT appear (no "HH:MM" pattern after the date)
-        const dateSpan = page.locator("span.text-muted", { hasText: "July 1, 2026" });
+        const dateSpan = page.locator("span.text-muted", { hasText: "01.07.2026" });
         await expect(dateSpan).not.toContainText(":");
     });
 

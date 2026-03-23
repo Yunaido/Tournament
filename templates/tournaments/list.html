@@ -19,7 +19,7 @@
                     <img src="{{ t.logo_url }}" alt="" class="rounded" width="40" height="40" style="object-fit:cover;">
                     <h5 class="card-title mb-0">{{ t.name }}</h5>
                 </div>
-                <p class="card-text text-muted">{{ t.date }}{% if t.start_time %}, {{ t.start_time|time:"H:i" }}{% endif %}</p>
+                <p class="card-text text-muted">{{ t.date|date:"d.m.Y" }}{% if t.start_time %}, {{ t.start_time|time:"H:i" }}{% endif %}</p>
                 <div class="d-flex gap-2 align-items-center">
                     <span class="badge bg-{% if t.status == 'SETUP' %}info{% else %}success{% endif %}">
                         {{ t.get_status_display }}
@@ -63,7 +63,7 @@
                     <img src="{{ t.logo_url }}" alt="" class="rounded" width="40" height="40" style="object-fit:cover;">
                     <h5 class="card-title mb-0">{{ t.name }}</h5>
                 </div>
-                <p class="card-text text-muted">{{ t.date }}{% if t.start_time %}, {{ t.start_time|time:"H:i" }}{% endif %}</p>
+                <p class="card-text text-muted">{{ t.date|date:"d.m.Y" }}{% if t.start_time %}, {{ t.start_time|time:"H:i" }}{% endif %}</p>
                 <span class="badge bg-secondary">Finished</span>
                 {% if t.event_type.accent_color %}
                 <span class="badge" style="background-color:{{ t.accent_color }};">{{ t.event_type }}</span>
