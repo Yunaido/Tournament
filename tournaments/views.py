@@ -246,9 +246,7 @@ def tournament_edit(request, pk):
             messages.success(request, "Tournament updated.")
             return redirect("tournament_detail", pk=pk)
     else:
-        # Pre-format the date as ISO so the <input type="date"> renders correctly.
-        initial = {"date": tournament.date.isoformat()} if tournament.date else {}
-        form = TournamentForm(instance=tournament, initial=initial)
+        form = TournamentForm(instance=tournament)
     return render(request, "tournaments/edit.html", {"form": form, "tournament": tournament})
 
 

@@ -202,6 +202,90 @@ test.describe("Tournaments – location", () => {
     });
 });
 
+test.describe("Tournaments – start time", () => {
+    test("create form has a start time field", async ({ page }) => {
+        await loginAsAdmin(page);
+        await page.goto("/tournaments/create/");
+        await expect(page.locator("#id_start_time")).toBeVisible();
+    });
+
+    test("tournament created with start time shows time in detail view", async ({ page }) => {
+        await loginAsAdmin(page);
+        await page.goto("/tournaments/create/");
+        const name = `Timed Cup ${Date.now()}`;
+        await page.fill("#id_name", name);
+        await page.fill("#id_date", "2026-06-15");
+        await page.fill("#id_start_time", "10:30");
+        await page.locator('.card-body button[type="submit"]').click();
+        await expect(page.locator("body")).toContainText("10:30");
+    });
+
+    test("tournament created with start time shows time on list page", async ({ page }) => {
+        await loginAsAdmin(page);
+        await page.goto("/tournaments/create/");
+        const name = `Timed List Cup ${Date.now()}`;
+        await page.fill("#id_name", name);
+        await page.fill("#id_date", "2026-06-20");
+        await page.fill("#id_start_time", "14:00");
+        await page.locator('.card-body button[type="submit"]').click();
+        await page.goto("/");
+        const card = page.locator(".card", { hasText: name });
+        await expect(card).toContainText("14:00");
+    });
+
+    test("tournament without start time shows only date in detail view", async ({ page }) => {
+        await loginAsAdmin(page);
+        await page.goto("/tournaments/create/");
+        const name = `No Time Cup ${Date.now()}`;
+        await page.fill("#id_name", name);
+        await page.fill("#id_date", "2026-07-01");
+        // leave start_time empty
+        await page.locator('.card-body button[type="submit"]').click();
+        // date should appear
+        await expect(page.locator("body")).toContainText("01.07.2026");
+        // time should NOT appear (no "HH:MM" pattern after the date)
+        const dateSpan = page.locator("span.text-muted", { hasText: "01.07.2026" });
+        await expect(dateSpan).not.toContainText(":");
+    });
+
+    test("edit form pre-populates start_time from saved value", async ({ page }) => {
+        await loginAsAdmin(page);
+        await page.goto("/tournaments/create/");
+        const name = `Edit Time Cup ${Date.now()}`;
+        await page.fill("#id_name", name);
+        await page.fill("#id_date", "2026-08-10");
+        await page.fill("#id_start_time", "09:30");
+        await page.locator('.card-body button[type="submit"]').click();
+        // Extract tournament ID from detail page URL
+        await page.waitForURL(/\/tournaments\/\d+\//);
+        const url = page.url();
+        const id = url.match(/\/tournaments\/(\d+)\//)?.[1];
+        expect(id).toBeTruthy();
+        // Go to edit page and verify start_time is pre-filled
+        await page.goto(`/tournaments/${id}/edit/`);
+        const timeValue = await page.inputValue("#id_start_time");
+        expect(timeValue).toBe("09:30");
+    });
+
+    test("edit form pre-populates start_time and saves updated value", async ({ page }) => {
+        await loginAsAdmin(page);
+        await page.goto("/tournaments/create/");
+        const name = `Update Time Cup ${Date.now()}`;
+        await page.fill("#id_name", name);
+        await page.fill("#id_date", "2026-09-05");
+        await page.fill("#id_start_time", "11:00");
+        await page.locator('.card-body button[type="submit"]').click();
+        await page.waitForURL(/\/tournaments\/\d+\//);
+        const url = page.url();
+        const id = url.match(/\/tournaments\/(\d+)\//)?.[1];
+        // Edit: change time to 15:45
+        await page.goto(`/tournaments/${id}/edit/`);
+        await page.fill("#id_start_time", "15:45");
+        await page.locator('button:has-text("Save Changes")').click();
+        await expect(page.locator("body")).toContainText("15:45");
+    });
+});
+
 test.describe("Tournaments – share link", () => {
     test("share button visible on SETUP tournament for logged-in user", async ({ page }) => {
         await loginAsAdmin(page);

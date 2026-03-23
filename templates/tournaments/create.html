@@ -25,6 +25,12 @@
                             <option value="{{ val }}" {% if field.value == val %}selected{% endif %}>{{ label }}</option>
                             {% endfor %}
                         </select>
+                        {% elif field.field.widget.input_type == 'date' %}
+                        <input type="date" class="form-control {% if field.errors %}is-invalid{% endif %}" id="{{ field.id_for_label }}"
+                            name="{{ field.html_name }}" value="{{ field.value|date:'Y-m-d' }}">
+                        {% elif field.field.widget.input_type == 'time' %}
+                        <input type="time" class="form-control {% if field.errors %}is-invalid{% endif %}" id="{{ field.id_for_label }}"
+                            name="{{ field.html_name }}" value="{{ field.value|time:'H:i' }}">
                         {% else %}
                         <input type="{{ field.field.widget.input_type|default:'text' }}"
                             class="form-control {% if field.errors %}is-invalid{% endif %}"
