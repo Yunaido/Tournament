@@ -24,6 +24,65 @@ test.describe("Tournaments – list page", () => {
         const card = page.locator(".card", { hasText: "East Blue Showdown" });
         await expect(card.locator('a:has-text("Results"), a:has-text("View")')).toBeVisible();
     });
+
+    test("sort and type filter controls are visible", async ({ page }) => {
+        await page.goto("/");
+        await expect(page.locator("#sort-select")).toBeVisible();
+        await expect(page.locator("body")).toContainText("All");
+    });
+
+    test("filter by event type shows only matching tournaments", async ({ page }) => {
+        await page.goto("/");
+        // Find the "Championship" type badge and click it
+        const typeBadge = page.locator('a.badge', { hasText: "Championship" });
+        await typeBadge.click();
+        await expect(page.locator("body")).toContainText("East Blue Showdown");
+        await expect(page.locator("body")).not.toContainText("Grand Line Cup");
+        await expect(page.locator("body")).not.toContainText("New World Invitational");
+    });
+
+    test("filter by event type preserves type param in URL", async ({ page }) => {
+        await page.goto("/");
+        const typeBadge = page.locator('a.badge', { hasText: "Championship" });
+        await typeBadge.click();
+        await expect(page).toHaveURL(/type=/);
+    });
+
+    test("sorting by date ascending puts older active tournament before newer one", async ({ page }) => {
+        await page.goto("/?sort=date_asc");
+        const cards = await page.locator(".card-title").allInnerTexts();
+        // Grand Line Cup is today; New World Invitational is 3 days in the future
+        // With date_asc: Grand Line (today) should appear before New World (future)
+        const grandLineIdx = cards.findIndex(t => t.includes("Grand Line Cup"));
+        const newWorldIdx = cards.findIndex(t => t.includes("New World Invitational"));
+        expect(grandLineIdx).toBeGreaterThanOrEqual(0);
+        expect(newWorldIdx).toBeGreaterThanOrEqual(0);
+        expect(grandLineIdx).toBeLessThan(newWorldIdx);
+    });
+
+    test("sorting by date descending shows newest active tournament first", async ({ page }) => {
+        await page.goto("/?sort=date_desc");
+        const cards = await page.locator(".card-title").allInnerTexts();
+        // New World Invitational is 3 days in the future; Grand Line Cup is today
+        // With date_desc: New World (future) should appear before Grand Line (today)
+        const grandLineIdx = cards.findIndex(t => t.includes("Grand Line Cup"));
+        const newWorldIdx = cards.findIndex(t => t.includes("New World Invitational"));
+        expect(grandLineIdx).toBeGreaterThanOrEqual(0);
+        expect(newWorldIdx).toBeGreaterThanOrEqual(0);
+        expect(newWorldIdx).toBeLessThan(grandLineIdx);
+    });
+
+    test("sorting by name shows select with correct default", async ({ page }) => {
+        await page.goto("/?sort=name_asc");
+        await expect(page.locator("#sort-select")).toHaveValue("?sort=name_asc");
+    });
+
+    test("all type filter link clears type filter", async ({ page }) => {
+        await page.goto("/?type=1&sort=date_desc");
+        await page.locator('a.badge', { hasText: "All" }).click();
+        await expect(page.locator("body")).toContainText("Grand Line Cup");
+        await expect(page.locator("body")).toContainText("East Blue Showdown");
+    });
 });
 
 test.describe("Tournaments – detail view", () => {
