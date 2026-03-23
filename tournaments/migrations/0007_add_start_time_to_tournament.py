@@ -4,7 +4,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("tournaments", "0005_add_location_fields"),
+        ("tournaments", "0006_eventtype"),
     ]
 
     operations = [
