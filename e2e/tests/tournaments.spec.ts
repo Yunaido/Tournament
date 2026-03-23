@@ -247,6 +247,43 @@ test.describe("Tournaments – start time", () => {
         const dateSpan = page.locator("span.text-muted", { hasText: "July 1, 2026" });
         await expect(dateSpan).not.toContainText(":");
     });
+
+    test("edit form pre-populates start_time from saved value", async ({ page }) => {
+        await loginAsAdmin(page);
+        await page.goto("/tournaments/create/");
+        const name = `Edit Time Cup ${Date.now()}`;
+        await page.fill("#id_name", name);
+        await page.fill("#id_date", "2026-08-10");
+        await page.fill("#id_start_time", "09:30");
+        await page.locator('.card-body button[type="submit"]').click();
+        // Extract tournament ID from detail page URL
+        await page.waitForURL(/\/tournaments\/\d+\//);
+        const url = page.url();
+        const id = url.match(/\/tournaments\/(\d+)\//)?.[1];
+        expect(id).toBeTruthy();
+        // Go to edit page and verify start_time is pre-filled
+        await page.goto(`/tournaments/${id}/edit/`);
+        const timeValue = await page.inputValue("#id_start_time");
+        expect(timeValue).toBe("09:30");
+    });
+
+    test("edit form pre-populates start_time and saves updated value", async ({ page }) => {
+        await loginAsAdmin(page);
+        await page.goto("/tournaments/create/");
+        const name = `Update Time Cup ${Date.now()}`;
+        await page.fill("#id_name", name);
+        await page.fill("#id_date", "2026-09-05");
+        await page.fill("#id_start_time", "11:00");
+        await page.locator('.card-body button[type="submit"]').click();
+        await page.waitForURL(/\/tournaments\/\d+\//);
+        const url = page.url();
+        const id = url.match(/\/tournaments\/(\d+)\//)?.[1];
+        // Edit: change time to 15:45
+        await page.goto(`/tournaments/${id}/edit/`);
+        await page.fill("#id_start_time", "15:45");
+        await page.locator('button:has-text("Save Changes")').click();
+        await expect(page.locator("body")).toContainText("15:45");
+    });
 });
 
 test.describe("Tournaments – share link", () => {
