@@ -6,7 +6,7 @@ test.describe("Admin – user save", () => {
         await loginAsAdmin(page);
 
         await page.goto("/admin/auth/user/");
-        await page.locator("#result_list").getByRole("link", { name: "Test" }).click();
+        await page.locator("#result_list").getByRole("link", { name: "sanji" }).click();
         await expect(page).toHaveURL(/\/admin\/auth\/user\/\d+\/change\//);
 
         // First save: change first name
@@ -16,7 +16,7 @@ test.describe("Admin – user save", () => {
         await expect(page.locator(".success")).toContainText("changed successfully");
 
         // Navigate back to the same user
-        await page.locator("#result_list").getByRole("link", { name: "Test" }).click();
+        await page.locator("#result_list").getByRole("link", { name: "sanji" }).click();
         await expect(page).toHaveURL(/\/admin\/auth\/user\/\d+\/change\//);
 
         // Second save (this is what triggered the 500)
@@ -31,7 +31,7 @@ test.describe("Admin – user save", () => {
         await loginAsAdmin(page);
 
         await page.goto("/admin/auth/user/");
-        await page.locator("#result_list").getByRole("link", { name: "Test" }).click();
+        await page.locator("#result_list").getByRole("link", { name: "sanji" }).click();
         await expect(page).toHaveURL(/\/admin\/auth\/user\/\d+\/change\//);
 
         const newEmail = `test_${Date.now()}@example.com`;
@@ -41,7 +41,7 @@ test.describe("Admin – user save", () => {
         await expect(page.locator(".success")).toContainText("changed successfully");
 
         // Second save after email change
-        await page.locator("#result_list").getByRole("link", { name: "Test" }).click();
+        await page.locator("#result_list").getByRole("link", { name: "sanji" }).click();
         await page.fill('input[name="last_name"]', "UpdatedLast");
         await page.locator('input[name="_save"]').click();
 
@@ -53,7 +53,7 @@ test.describe("Admin – user save", () => {
         await loginAsAdmin(page);
 
         await page.goto("/admin/auth/user/");
-        await page.locator("#result_list").getByRole("link", { name: "Test" }).click();
+        await page.locator("#result_list").getByRole("link", { name: "sanji" }).click();
         await expect(page).toHaveURL(/\/admin\/auth\/user\/\d+\/change\//);
 
         await page.fill('input[name="profile-0-display_name"]', "TestUser Renamed");
@@ -62,8 +62,8 @@ test.describe("Admin – user save", () => {
         await expect(page.locator(".success")).toContainText("changed successfully");
 
         // Second save with a different display name
-        await page.locator("#result_list").getByRole("link", { name: "Test" }).click();
-        await page.fill('input[name="profile-0-display_name"]', "TestUser");
+        await page.locator("#result_list").getByRole("link", { name: "sanji" }).click();
+        await page.fill('input[name="profile-0-display_name"]', "Sanji");
         await page.locator('input[name="_save"]').click();
 
         await expect(page).toHaveURL("/admin/auth/user/");
