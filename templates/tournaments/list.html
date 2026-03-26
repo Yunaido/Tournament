@@ -13,8 +13,8 @@
     <div class="d-flex align-items-center gap-2">
         <label class="text-muted small mb-0" for="sort-select">Sort:</label>
         <select id="sort-select" class="form-select form-select-sm w-auto">
-            <option value="date_desc" {% if current_sort == "date_desc" %}selected{% endif %}>Date ↓ (newest first)</option>
-            <option value="date_asc" {% if current_sort == "date_asc" %}selected{% endif %}>Date ↑ (oldest first)</option>
+            <option value="date_asc" {% if current_sort == "date_asc" %}selected{% endif %}>Soonest first</option>
+            <option value="date_desc" {% if current_sort == "date_desc" %}selected{% endif %}>Latest first</option>
             <option value="name_asc" {% if current_sort == "name_asc" %}selected{% endif %}>Name A → Z</option>
             <option value="name_desc" {% if current_sort == "name_desc" %}selected{% endif %}>Name Z → A</option>
         </select>
