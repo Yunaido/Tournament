@@ -324,8 +324,10 @@ test.describe("Tournaments – share link", () => {
         await page.goto("/");
         const card = page.locator(".card", { hasText: "New World Invitational" });
         await card.locator('a:has-text("View"), a:has-text("Details")').click();
+        // Wait for Bootstrap JS to fully load before triggering modal
+        await page.waitForLoadState("networkidle");
         await page.locator('button[data-bs-target="#shareModal"]').click();
-        await expect(page.locator("#shareModal")).toBeVisible();
+        await expect(page.locator("#shareModal")).toBeVisible({ timeout: 10000 });
         await page.locator("#copy-btn").click();
         // Button text changes to "Copied" (via clipboard API or execCommand fallback)
         await expect(page.locator("#copy-btn")).toContainText("Copied");
@@ -447,16 +449,11 @@ test.describe("Tournaments – join / leave", () => {
         await page.goto("/");
         const card = page.locator(".card", { hasText: "New World Invitational" });
         await card.locator('a:has-text("View"), a:has-text("Details")').click();
-        // Either no Join button, or a message saying already registered
+        // Join button is always shown; clicking it when already registered shows a message
         const joinBtn = page.locator('button:has-text("Join Tournament")');
-        const alreadyMsg = page.locator("body");
-        if (await joinBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
-            await joinBtn.click();
-            await expect(alreadyMsg).toContainText(/already|registered/i);
-        } else {
-            // Button should not be visible
-            await expect(joinBtn).not.toBeVisible();
-        }
+        await expect(joinBtn).toBeVisible();
+        await joinBtn.click();
+        await expect(page.locator("body")).toContainText(/already|registered/i);
     });
 
     test("player can leave a SETUP tournament", async ({ page }) => {
