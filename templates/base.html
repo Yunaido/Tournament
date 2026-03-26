@@ -12,9 +12,12 @@
     <link rel="apple-touch-icon" href="{% static 'img/apple-touch-icon.webp' %}">
     <link rel="stylesheet" href="{% static 'css/custom.css' %}">
     <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
 </head>
 
 <body>
+    <canvas id="op-fx-canvas" aria-hidden="true"></canvas>
+    <button id="op-fx-toggle" type="button" aria-label="Toggle visual effects" title="Visual effects ON – click to disable">✨</button>
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark border-bottom mb-4">
         <div class="container">
             <a class="navbar-brand fw-bold d-flex align-items-center gap-2" href="{% url 'tournament_list' %}">
@@ -54,6 +57,7 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{% static 'js/ocean-fx.js' %}"></script>
 </body>
 
 </html>
