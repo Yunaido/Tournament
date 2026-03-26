@@ -9,6 +9,7 @@ class PlayerProfileInline(admin.StackedInline):
     model = PlayerProfile
     fk_name = "user"
     can_delete = False
+    readonly_fields = ["avatar_data"]
 
 
 class UserAdmin(BaseUserAdmin):

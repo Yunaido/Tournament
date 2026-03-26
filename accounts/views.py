@@ -1,4 +1,5 @@
 import json
+import logging
 
 import sesame.utils
 from django.conf import settings
@@ -39,6 +40,8 @@ from .forms import (
 )
 from .models import EmailVerification, Invite, PlayerProfile, WebAuthnCredential
 from .utils import get_image_content_type, make_qr_svg
+
+logger = logging.getLogger(__name__)
 
 
 @ratelimit(key="ip", rate="5/m", method="POST", block=False)
@@ -102,15 +105,21 @@ def register(request, token):
             verify_url = request.build_absolute_uri(
                 reverse("accounts:verify_email", args=[verification.token])
             )
-            send_mail(
-                subject="Verify your email — OP TCG Tournament",
-                message=render_to_string(
-                    "accounts/verify_email.txt",
-                    {"user": user, "verify_url": verify_url},
-                ),
-                from_email=None,
-                recipient_list=[user.email],
-            )
+            try:
+                send_mail(
+                    subject="Verify your email — OP TCG Tournament",
+                    message=render_to_string(
+                        "accounts/verify_email.txt",
+                        {"user": user, "verify_url": verify_url},
+                    ),
+                    from_email=None,
+                    recipient_list=[user.email],
+                )
+            except Exception:
+                logger.exception("Failed to send registration verification email to %s", user.email)
+                form.add_error(None, "Could not send verification email. Please try again or contact support.")
+                user.delete()  # roll back the created user
+                return render(request, "accounts/register.html", {"form": form, "invite": invite})
             return render(request, "accounts/verify_email_sent.html", {"email": user.email})
     else:
         form = RegisterForm()
@@ -209,15 +218,21 @@ def security(request):
                 verify_url = request.build_absolute_uri(
                     reverse("accounts:verify_email", args=[verification.token])
                 )
-                send_mail(
-                    subject="Confirm your email change — OP TCG Tournament",
-                    message=render_to_string(
-                        "accounts/verify_email_change.txt",
-                        {"user": user, "verify_url": verify_url, "new_email": new_email},
-                    ),
-                    from_email=None,
-                    recipient_list=[new_email],
-                )
+                try:
+                    send_mail(
+                        subject="Confirm your email change — OP TCG Tournament",
+                        message=render_to_string(
+                            "accounts/verify_email_change.txt",
+                            {"user": user, "verify_url": verify_url, "new_email": new_email},
+                        ),
+                        from_email=None,
+                        recipient_list=[new_email],
+                    )
+                except Exception:
+                    logger.exception("Failed to send email change verification to %s", new_email)
+                    verification.delete()
+                    messages.error(request, "Could not send verification email. Please check the address and try again.")
+                    return redirect("accounts:security")
                 messages.success(request, f"A verification link has been sent to {new_email}.")
                 return redirect("accounts:security")
 
@@ -250,15 +265,18 @@ def magic_link_request(request):
                 token = sesame.utils.get_token(user)
                 login_path = reverse("accounts:magic_login") + "?sesame=" + token
                 login_url = request.build_absolute_uri(login_path)
-                send_mail(
-                    subject="Your login link — OP TCG Tournament",
-                    message=render_to_string(
-                        "accounts/magic_link_email.txt",
-                        {"user": user, "login_url": login_url},
-                    ),
-                    from_email=None,  # uses DEFAULT_FROM_EMAIL
-                    recipient_list=[user.email],
-                )
+                try:
+                    send_mail(
+                        subject="Your login link — OP TCG Tournament",
+                        message=render_to_string(
+                            "accounts/magic_link_email.txt",
+                            {"user": user, "login_url": login_url},
+                        ),
+                        from_email=None,  # uses DEFAULT_FROM_EMAIL
+                        recipient_list=[user.email],
+                    )
+                except Exception:
+                    logger.exception("Failed to send magic link email to %s", user.email)
 
             # Always show success — don't leak whether the email exists.
             return render(request, "accounts/magic_link_sent.html", {"email": email})
