@@ -19,8 +19,8 @@ def tournament_list(request):
         "name_asc": "name",
         "name_desc": "-name",
     }
-    sort = request.GET.get("sort", "date_desc")
-    order_by = _sort_map.get(sort, "-date")
+    sort = request.GET.get("sort", "date_asc")
+    order_by = _sort_map.get(sort, "date")
     event_type_id = request.GET.get("type", "")
 
     qs = Tournament.objects.select_related("event_type", "created_by__profile")
