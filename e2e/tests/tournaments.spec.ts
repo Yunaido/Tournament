@@ -74,7 +74,7 @@ test.describe("Tournaments – list page", () => {
 
     test("sorting by name shows select with correct default", async ({ page }) => {
         await page.goto("/?sort=name_asc");
-        await expect(page.locator("#sort-select")).toHaveValue("?sort=name_asc");
+        await expect(page.locator("#sort-select")).toHaveValue("name_asc");
     });
 
     test("all type filter link clears type filter", async ({ page }) => {
@@ -82,6 +82,54 @@ test.describe("Tournaments – list page", () => {
         await page.locator('a.badge', { hasText: "All" }).click();
         await expect(page.locator("body")).toContainText("Grand Line Cup");
         await expect(page.locator("body")).toContainText("East Blue Showdown");
+    });
+
+    test("changing sort via dropdown navigates and updates URL", async ({ page }) => {
+        await page.goto("/");
+        const sel = page.locator("#sort-select");
+        await sel.selectOption("name_asc");
+        await page.waitForURL(/sort=name_asc/);
+        await expect(sel).toHaveValue("name_asc");
+    });
+
+    test("sort dropdown preserves type filter", async ({ page }) => {
+        // Start with a type filter active
+        await page.goto("/");
+        await page.locator('a.badge', { hasText: "Championship" }).click();
+        await page.waitForURL(/type=/);
+
+        // Now change the sort — type param must survive
+        const sel = page.locator("#sort-select");
+        await sel.selectOption("name_asc");
+        await page.waitForURL(/sort=name_asc/);
+        expect(page.url()).toContain("type=");
+    });
+
+    test("type filter preserves current sort selection", async ({ page }) => {
+        // Set sort to name_asc first
+        await page.goto("/?sort=name_asc");
+        await expect(page.locator("#sort-select")).toHaveValue("name_asc");
+
+        // Click a type badge
+        await page.locator('a.badge', { hasText: "Championship" }).click();
+        await page.waitForURL(/type=/);
+
+        // Sort must still be name_asc in both URL and dropdown
+        expect(page.url()).toContain("sort=name_asc");
+        await expect(page.locator("#sort-select")).toHaveValue("name_asc");
+    });
+
+    test("sort dropdown reflects correct value after type filter click", async ({ page }) => {
+        // Set sort to name_desc
+        await page.goto("/?sort=name_desc");
+        await expect(page.locator("#sort-select")).toHaveValue("name_desc");
+
+        // Click Competitive type badge
+        await page.locator('a.badge', { hasText: "Competitive" }).click();
+        await page.waitForURL(/type=/);
+
+        // Dropdown must still show name_desc
+        await expect(page.locator("#sort-select")).toHaveValue("name_desc");
     });
 });
 
