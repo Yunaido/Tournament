@@ -1,11 +1,33 @@
 {% extends "base.html" %}
+{% load static %}
 {% block title %}Tournaments{% endblock %}
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
+<div class="d-flex justify-content-between align-items-center mb-3">
     <h2>Tournaments</h2>
     {% if user.is_authenticated %}
     <a href="{% url 'tournament_create' %}" class="btn btn-primary">+ New Tournament</a>
     {% endif %}
+</div>
+
+<div class="d-flex flex-wrap gap-2 align-items-center mb-4">
+    <div class="d-flex align-items-center gap-2">
+        <label class="text-muted small mb-0" for="sort-select">Sort:</label>
+        <select id="sort-select" class="form-select form-select-sm w-auto">
+            <option value="date_desc" {% if current_sort == "date_desc" %}selected{% endif %}>Date ↓ (newest first)</option>
+            <option value="date_asc" {% if current_sort == "date_asc" %}selected{% endif %}>Date ↑ (oldest first)</option>
+            <option value="name_asc" {% if current_sort == "name_asc" %}selected{% endif %}>Name A → Z</option>
+            <option value="name_desc" {% if current_sort == "name_desc" %}selected{% endif %}>Name Z → A</option>
+        </select>
+    </div>
+    <div class="d-flex flex-wrap align-items-center gap-1">
+        <span class="text-muted small me-1">Type:</span>
+        <a href="?sort={{ current_sort }}" class="badge text-decoration-none {% if not current_type %}bg-primary{% else %}bg-secondary opacity-75{% endif %}">All</a>
+        {% for et in event_types %}
+        <a href="?sort={{ current_sort }}&amp;type={{ et.pk }}"
+           class="badge text-decoration-none"
+           style="background-color:{% if et.accent_color %}{{ et.accent_color }}{% else %}#6c757d{% endif %};opacity:{% if current_type == et.pk|stringformat:'s' %}1{% else %}0.65{% endif %};">{{ et.name }}</a>
+        {% endfor %}
+    </div>
 </div>
 
 {% if active_tournaments %}
@@ -97,3 +119,8 @@
 </div>
 {% endif %}
 {% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/sort-filter.js' %}"></script>
+{% endblock %}
+

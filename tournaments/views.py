@@ -8,17 +8,42 @@ from django.views.decorators.http import require_POST
 from accounts.utils import get_image_content_type, make_qr_svg
 
 from .forms import ReportResultForm, TournamentForm
-from .models import Match, Round, Tournament, TournamentPlayer
+from .models import EventType, Match, Round, Tournament, TournamentPlayer
 from .pairing import check_round_complete, generate_round
 
 
 def tournament_list(request):
-    active = Tournament.objects.exclude(status=Tournament.Status.FINISHED)
-    finished = Tournament.objects.filter(status=Tournament.Status.FINISHED)
+    _sort_map = {
+        "date_desc": "-date",
+        "date_asc": "date",
+        "name_asc": "name",
+        "name_desc": "-name",
+    }
+    sort = request.GET.get("sort", "date_desc")
+    order_by = _sort_map.get(sort, "-date")
+    event_type_id = request.GET.get("type", "")
+
+    qs = Tournament.objects.select_related("event_type", "created_by__profile")
+    if event_type_id.isdigit():
+        try:
+            qs = qs.filter(event_type_id=int(event_type_id))
+        except (ValueError, OverflowError):
+            event_type_id = ""
+
+    active = qs.exclude(status=Tournament.Status.FINISHED).order_by(order_by)
+    finished = qs.filter(status=Tournament.Status.FINISHED).order_by(order_by)
+    event_types = EventType.objects.all()
+
     return render(
         request,
         "tournaments/list.html",
-        {"active_tournaments": active, "finished_tournaments": finished},
+        {
+            "active_tournaments": active,
+            "finished_tournaments": finished,
+            "event_types": event_types,
+            "current_sort": sort,
+            "current_type": event_type_id,
+        },
     )
 
 
