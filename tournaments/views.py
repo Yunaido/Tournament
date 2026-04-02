@@ -331,12 +331,14 @@ def report_result(request, match_pk):
                 match.player2_confirmed = True
                 match.save(update_fields=["player2_result", "player2_confirmed"])
 
+            # Both reported before check_confirmation?
+            both_reported = match.player1_confirmed and match.player2_confirmed
             match.check_confirmation()
 
             if match.confirmed:
                 messages.success(request, "Result confirmed by both players!")
                 check_round_complete(match.round)
-            elif match.player1_confirmed and match.player2_confirmed:
+            elif both_reported and not match.confirmed:
                 # Both reported but results conflicted — got reset
                 messages.warning(
                     request,
@@ -376,6 +378,7 @@ def standings(request, pk):
         "tournaments/standings.html",
         {"tournament": tournament, "standings": standings},
     )
+
 
 
 def match_history(request, pk):
