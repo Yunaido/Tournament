@@ -73,6 +73,17 @@ export async function clickFirstReportLink(page: Page): Promise<boolean> {
     return false;
 }
 
+/**
+ * Reset a match between two players in a tournament to PENDING state.
+ * Calls the Django management command inside the running web container.
+ */
+export function resetMatch(tournament: string, player1: string, player2: string) {
+    execSync(
+        `docker compose exec -T web python manage.py reset_match "${tournament}" ${player1} ${player2}`,
+        { cwd: PROJECT_ROOT, encoding: "utf-8" },
+    );
+}
+
 /** Get the pk from the current URL, assuming it ends with /.../<pk>/. */
 export function pkFromUrl(url: string): string {
     const parts = url.replace(/\/$/, "").split("/");
