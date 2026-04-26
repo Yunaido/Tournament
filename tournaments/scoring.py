@@ -2,10 +2,16 @@
 One Piece TCG official scoring and tiebreakers.
 
 Ranking order:
-  1. Match Points (MP)  — Win=3, Draw=1, Loss=0
+  1. Match Points (MP)  — Win=3, Draw=1, Loss=0 (a BYE is worth a full win = 3 MP)
   2. Opponent Match Win % (OMW%) — Average of opponents' match-win%, floored at 33%
   3. Game Win % (GW%)   — player's game-wins / total-games-played
   4. Opponent Game Win % (OGW%) — average of opponents' GW%, floored at 33%
+
+BYE handling (per official Bandai / Wizards-style Swiss rules):
+  A bye counts as a 2-0 match win for *match points only*. It is NOT included
+  in the recipient's Match-Win % or Game-Win % (neither numerator nor
+  denominator), so it cannot inflate their own tiebreakers nor their
+  opponents' OMW%/OGW%.
 """
 from __future__ import annotations
 
@@ -18,18 +24,17 @@ WIN_POINTS = Decimal(3)
 DRAW_POINTS = Decimal(1)
 LOSS_POINTS = Decimal(0)
 FLOOR = Decimal("0.33")
-BYE_GAME_WINS = 2
-BYE_GAME_LOSSES = 0
 
 
 @dataclass
 class PlayerStats:
     player: TournamentPlayer
-    match_wins: int = 0
+    match_wins: int = 0  # wins in *played* matches (excludes byes)
     match_draws: int = 0
     match_losses: int = 0
-    game_wins: int = 0
-    game_losses: int = 0
+    bye_wins: int = 0  # byes received; counted in MP only, NOT in MWP/GWP
+    game_wins: int = 0  # games won in *played* matches (excludes byes)
+    game_losses: int = 0  # games lost in *played* matches (excludes byes)
     opponents: list[int] = field(default_factory=list)  # list of TournamentPlayer PKs
 
     @property
@@ -38,21 +43,31 @@ class PlayerStats:
             WIN_POINTS * self.match_wins
             + DRAW_POINTS * self.match_draws
             + LOSS_POINTS * self.match_losses
+            + WIN_POINTS * self.bye_wins
         )
 
     @property
     def matches_played(self) -> int:
+        """Number of *played* matches (excludes byes), used for MWP."""
         return self.match_wins + self.match_draws + self.match_losses
 
     @property
     def match_win_percentage(self) -> Decimal:
+        """
+        MWP from played matches only (byes excluded from numerator and denominator),
+        floored at 33%.
+        """
         played = self.matches_played
         if played == 0:
             return FLOOR
-        return max(self.match_points / (played * WIN_POINTS), FLOOR)
+        played_points = (
+            WIN_POINTS * self.match_wins + DRAW_POINTS * self.match_draws
+        )
+        return max(played_points / (played * WIN_POINTS), FLOOR)
 
     @property
     def game_win_percentage(self) -> Decimal:
+        """GWP from played matches only (bye games excluded), floored at 33%."""
         total = self.game_wins + self.game_losses
         if total == 0:
             return FLOOR
@@ -102,9 +117,9 @@ def _gather_stats(tournament: Tournament) -> dict[int, PlayerStats]:
             continue
 
         if match.is_bye:
-            s1.match_wins += 1
-            s1.game_wins += BYE_GAME_WINS
-            s1.game_losses += BYE_GAME_LOSSES
+            # Bye: counts toward match points only, NOT toward MWP/GWP or
+            # opponent tiebreakers.
+            s1.bye_wins += 1
             continue
 
         p2_pk = match.player2_id
@@ -169,7 +184,9 @@ def compute_standings(tournament: Tournament) -> list[StandingRow]:
                 rank=0,
                 player=ps.player,
                 match_points=ps.match_points,
-                wins=ps.match_wins,
+                # Display wins include byes so the standings table reflects
+                # the player's record (a bye is still a match win on paper).
+                wins=ps.match_wins + ps.bye_wins,
                 draws=ps.match_draws,
                 losses=ps.match_losses,
                 omw_pct=calc_omw(ps),
