@@ -1,4 +1,4 @@
-Django>=5.1,<6.1
+Django>=6.0.4,<6.1
 django-htmx>=1.19
 django-ratelimit>=4.1
 django-sesame>=3.2
