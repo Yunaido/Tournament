@@ -23,4 +23,8 @@ urlpatterns = [
     path("invites/", views.invite_list, name="invite_list"),
     path("invites/<uuid:token>/", views.invite_detail, name="invite_detail"),
     path("invites/<uuid:token>/toggle/", views.invite_toggle, name="invite_toggle"),
+    path("push/subscribe/", views.push_subscribe, name="push_subscribe"),
+    path("push/unsubscribe/", views.push_unsubscribe, name="push_unsubscribe"),
+    path("push/vapid-key/", views.vapid_public_key, name="vapid_public_key"),
+    path("notifications/", views.notification_preferences, name="notification_preferences"),
 ]

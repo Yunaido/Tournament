@@ -34,11 +34,12 @@ from .forms import (
     ChangePasswordForm,
     InviteForm,
     MagicLinkForm,
+    NotificationPreferenceForm,
     PasswordLoginForm,
     ProfileEditForm,
     RegisterForm,
 )
-from .models import EmailVerification, Invite, PlayerProfile, WebAuthnCredential
+from .models import EmailVerification, Invite, NotificationPreference, PlayerProfile, PushSubscription, WebAuthnCredential
 from .utils import get_image_content_type, make_qr_svg
 
 logger = logging.getLogger(__name__)
@@ -509,3 +510,87 @@ def verify_email(request, token):
             messages.success(request, "Email updated.")
             return redirect("accounts:security")
         return redirect("accounts:login")
+
+
+# ── Push Notification Endpoints ─────────────────────────────────────
+
+
+def vapid_public_key(request):
+    """Return the VAPID public key as JSON (needed by client JS to subscribe)."""
+    return JsonResponse({"publicKey": settings.VAPID_PUBLIC_KEY})
+
+
+@login_required
+@require_POST
+def push_subscribe(request):
+    """Save a push subscription for the current user."""
+    try:
+        body = json.loads(request.body)
+    except (json.JSONDecodeError, ValueError):
+        return JsonResponse({"error": "Invalid JSON."}, status=400)
+
+    endpoint = body.get("endpoint", "")
+    keys = body.get("keys", {})
+    p256dh = keys.get("p256dh", "")
+    auth = keys.get("auth", "")
+
+    if not endpoint or not p256dh or not auth:
+        return JsonResponse({"error": "Missing subscription data."}, status=400)
+
+    PushSubscription.objects.update_or_create(
+        user=request.user,
+        endpoint=endpoint,
+        defaults={"p256dh": p256dh, "auth": auth},
+    )
+    # Ensure notification preferences exist
+    NotificationPreference.objects.get_or_create(user=request.user)
+    return JsonResponse({"ok": True})
+
+
+@login_required
+@require_POST
+def push_unsubscribe(request):
+    """Remove a push subscription for the current user."""
+    try:
+        body = json.loads(request.body)
+    except (json.JSONDecodeError, ValueError):
+        return JsonResponse({"error": "Invalid JSON."}, status=400)
+
+    endpoint = body.get("endpoint", "")
+    if not endpoint:
+        return JsonResponse({"error": "Missing endpoint."}, status=400)
+
+    deleted, _ = PushSubscription.objects.filter(
+        user=request.user, endpoint=endpoint
+    ).delete()
+    return JsonResponse({"ok": True, "deleted": deleted > 0})
+
+
+@login_required
+def notification_preferences(request):
+    """View/edit notification preferences."""
+    pref, _ = NotificationPreference.objects.get_or_create(user=request.user)
+
+    if request.method == "POST":
+        form = NotificationPreferenceForm(request.POST)
+        if form.is_valid():
+            pref.round_started = form.cleaned_data["round_started"]
+            pref.match_confirmed = form.cleaned_data["match_confirmed"]
+            pref.result_reported = form.cleaned_data["result_reported"]
+            pref.tournament_finished = form.cleaned_data["tournament_finished"]
+            pref.save()
+            messages.success(request, "Notification preferences updated.")
+            return redirect("accounts:notification_preferences")
+    else:
+        form = NotificationPreferenceForm(initial={
+            "round_started": pref.round_started,
+            "match_confirmed": pref.match_confirmed,
+            "result_reported": pref.result_reported,
+            "tournament_finished": pref.tournament_finished,
+        })
+
+    has_subscription = PushSubscription.objects.filter(user=request.user).exists()
+    return render(request, "accounts/notification_preferences.html", {
+        "form": form,
+        "has_subscription": has_subscription,
+    })
