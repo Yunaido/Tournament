@@ -204,8 +204,12 @@ def check_round_complete(round_obj: Round) -> bool:
 
 def _finalize_tournament(tournament: Tournament):
     """Mark tournament as finished and update player profiles."""
+    from accounts.notifications import notify_tournament_finished
+
     tournament.status = Tournament.Status.FINISHED
     tournament.save(update_fields=["status"])
+
+    notify_tournament_finished(tournament)
 
     standings = compute_standings(tournament)
 

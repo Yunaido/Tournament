@@ -100,8 +100,9 @@ test.describe("Security – password", () => {
     });
 
     test("can change password with correct current password", async ({ page }) => {
-        // Use franky — change and then change back
-        await loginAsPlayer(page, "franky");
+        // Use nami — change and then change back
+        // Avoid franky/brook/chopper/robin as they are used in match-reporting tests.
+        await loginAsPlayer(page, "nami");
         await page.goto("/accounts/profile/security/");
         await page.fill("#id_current_password", PLAYER_PASSWORD);
         await page.fill("#id_new_password1", "NewSecurePass1!");
@@ -111,8 +112,8 @@ test.describe("Security – password", () => {
 
         // Logout and verify new password works
         await logout(page);
-        await loginWithPassword(page, "franky", "NewSecurePass1!");
-        await expect(page.locator("nav")).toContainText("Franky");
+        await loginWithPassword(page, "nami", "NewSecurePass1!");
+        await expect(page.locator("nav")).toContainText("Nami");
 
         // Restore original password
         await page.goto("/accounts/profile/security/");

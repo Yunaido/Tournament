@@ -19,6 +19,7 @@ from django.core.management.base import BaseCommand
 from django.utils import timezone
 
 from accounts.models import Invite, PlayerProfile
+from accounts.models import NotificationPreference
 from tournaments.models import EventType, Match, Round, Tournament, TournamentPlayer
 
 
@@ -87,6 +88,7 @@ class Command(BaseCommand):
             TournamentPlayer.objects.all().delete()
             Tournament.objects.all().delete()
             Invite.objects.all().delete()
+            NotificationPreference.objects.all().delete()
             PlayerProfile.objects.all().delete()
             User.objects.filter(is_superuser=False).delete()
             EventType.objects.all().delete()
@@ -119,6 +121,7 @@ class Command(BaseCommand):
         PlayerProfile.objects.get_or_create(
             user=user, defaults={"display_name": "Admin"}
         )
+        NotificationPreference.objects.get_or_create(user=user)
         return user
 
     def _create_players(self, admin: User) -> list[User]:
@@ -138,6 +141,7 @@ class Command(BaseCommand):
                     invited_by=admin,
                     avatar_data=_make_avatar_svg(p["display_name"][0], p["color"]),
                 )
+                NotificationPreference.objects.get_or_create(user=user)
                 self.stdout.write(f"  Created player: {p['username']}")
             else:
                 self.stdout.write(f"  Player exists:  {p['username']}")

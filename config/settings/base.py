@@ -109,3 +109,8 @@ SESSION_COOKIE_HTTPONLY = True
 
 # Email verification tokens expire after 24 hours.
 EMAIL_VERIFICATION_MAX_AGE = 86400
+
+# Web Push Notifications (VAPID)
+VAPID_PUBLIC_KEY = os.environ.get("VAPID_PUBLIC_KEY", "")
+VAPID_PRIVATE_KEY = os.environ.get("VAPID_PRIVATE_KEY", "")
+VAPID_CLAIM_EMAIL = os.environ.get("VAPID_CLAIM_EMAIL", "mailto:admin@localhost")
