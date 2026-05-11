@@ -1,13 +1,25 @@
 """
 One Piece TCG official scoring and tiebreakers.
 
+Source:
+  ONE PIECE CARD GAME Tournament Rules Manual
+  (https://en.onepiece-cardgame.com/pdf/tournament_rules_manual.pdf)
+  - "Byes": a bye awards a win worth full match points.
+  - "Tiebreaker Calculations": bye rounds are excluded from average-rate
+    calculations (player and opponent rates), with the 33% floor applied.
+
 Ranking order:
   1. Match Points (MP)  — Win=3, Draw=1, Loss=0 (a BYE is worth a full win = 3 MP)
   2. Opponent Match Win % (OMW%) — Average of opponents' match-win%, floored at 33%
   3. Game Win % (GW%)   — player's game-wins / total-games-played
   4. Opponent Game Win % (OGW%) — average of opponents' GW%, floored at 33%
 
-BYE handling (per official Bandai / Wizards-style Swiss rules):
+Scope:
+  This module computes Swiss standings from confirmed Swiss matches in the DB.
+  It does not implement other event structures (single-elimination brackets,
+  top-cut bracket placement, or random tie resolution policies).
+
+BYE handling:
   A bye counts as a 2-0 match win for *match points only*. It is NOT included
   in the recipient's Match-Win % or Game-Win % (neither numerator nor
   denominator), so it cannot inflate their own tiebreakers nor their
