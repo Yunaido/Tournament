@@ -122,6 +122,19 @@
             </div>
         </div>
 
+        {# ── Notifications ── #}
+        <div class="card mb-4">
+            <div class="card-header"><strong>🔔 Notifications</strong></div>
+            <div class="card-body">
+                <p class="text-muted small mb-3">
+                    Manage push notifications to stay informed about your matches and tournaments.
+                </p>
+                <a href="{% url 'accounts:notification_preferences' %}" class="btn btn-outline-light btn-sm">
+                    Notification Preferences
+                </a>
+            </div>
+        </div>
+
     </div>
 </div>
 <script src="{% static 'js/passkey.js' %}"></script>

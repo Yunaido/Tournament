@@ -8,6 +8,14 @@ from .utils import process_image
 _ACCEPT = "image/jpeg,image/png,image/gif,image/webp"
 
 
+class NotificationPreferenceForm(forms.Form):
+    """Toggle per-type notification preferences."""
+    round_started = forms.BooleanField(required=False, label="New round started")
+    match_confirmed = forms.BooleanField(required=False, label="Match result confirmed")
+    result_reported = forms.BooleanField(required=False, label="Opponent reported result")
+    tournament_finished = forms.BooleanField(required=False, label="Tournament finished")
+
+
 class RegisterForm(forms.ModelForm):
     """Registration form — password is optional; users can also log in via email link or passkey."""
 

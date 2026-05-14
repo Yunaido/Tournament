@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Notification Preferences{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="d-flex align-items-center justify-content-between mb-4">
+            <h3 class="mb-0">🔔 Notification Preferences</h3>
+            <a href="{% url 'accounts:security' %}" class="btn btn-outline-secondary btn-sm">← Back to Security</a>
+        </div>
+
+        {# ── Push Notifications ── #}
+        <div class="card mb-4">
+            <div class="card-header"><strong>📲 Push Notifications</strong></div>
+            <div class="card-body">
+                <p id="push-status" class="text-muted small mb-3">Checking push notification status…</p>
+                <button id="push-subscribe-btn" class="btn btn-primary btn-sm" style="display:none;">
+                    Enable Push Notifications
+                </button>
+                <button id="push-unsubscribe-btn" class="btn btn-outline-danger btn-sm" style="display:none;">
+                    Disable Push Notifications
+                </button>
+            </div>
+        </div>
+
+        {# ── Notification Types ── #}
+        <div class="card mb-4">
+            <div class="card-header"><strong>⚙️ Notification Types</strong></div>
+            <div class="card-body">
+                <p class="text-muted small mb-3">Choose which events you want to be notified about.</p>
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="form-check mb-2">
+                        <input type="checkbox" class="form-check-input" id="id_round_started" name="round_started"
+                            {% if form.round_started.value %}checked{% endif %}>
+                        <label class="form-check-label" for="id_round_started">
+                            🎮 New round started
+                            <span class="text-muted small d-block">Get notified when a new round begins in a tournament you're playing in.</span>
+                        </label>
+                    </div>
+                    <div class="form-check mb-2">
+                        <input type="checkbox" class="form-check-input" id="id_result_reported" name="result_reported"
+                            {% if form.result_reported.value %}checked{% endif %}>
+                        <label class="form-check-label" for="id_result_reported">
+                            📝 Opponent reported result
+                            <span class="text-muted small d-block">Get notified when your opponent reports their match result.</span>
+                        </label>
+                    </div>
+                    <div class="form-check mb-2">
+                        <input type="checkbox" class="form-check-input" id="id_match_confirmed" name="match_confirmed"
+                            {% if form.match_confirmed.value %}checked{% endif %}>
+                        <label class="form-check-label" for="id_match_confirmed">
+                            ✅ Match result confirmed
+                            <span class="text-muted small d-block">Get notified when your match result is confirmed by both players.</span>
+                        </label>
+                    </div>
+                    <div class="form-check mb-3">
+                        <input type="checkbox" class="form-check-input" id="id_tournament_finished" name="tournament_finished"
+                            {% if form.tournament_finished.value %}checked{% endif %}>
+                        <label class="form-check-label" for="id_tournament_finished">
+                            🏆 Tournament finished
+                            <span class="text-muted small d-block">Get notified when a tournament you're in has finished.</span>
+                        </label>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-sm">Save Preferences</button>
+                </form>
+            </div>
+        </div>
+
+    </div>
+</div>
+<script src="{% static 'js/push-notifications.js' %}"></script>
+{% endblock %}

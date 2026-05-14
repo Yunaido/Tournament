@@ -9,6 +9,11 @@ from accounts.utils import get_image_content_type, make_qr_svg
 
 from .forms import ReportResultForm, TournamentForm
 from .models import EventType, Match, Round, Tournament, TournamentPlayer
+from accounts.notifications import (
+    notify_match_confirmed,
+    notify_result_reported,
+    notify_round_started,
+)
 from .pairing import check_round_complete, generate_round
 
 
@@ -216,8 +221,9 @@ def tournament_start(request, pk):
         return redirect("tournament_detail", pk=pk)
 
     try:
-        generate_round(tournament)
+        round_obj = generate_round(tournament)
         messages.success(request, "Round 1 generated! Players can now report results.")
+        notify_round_started(round_obj)
     except ValueError as e:
         messages.error(request, str(e))
     return redirect("tournament_detail", pk=pk)
@@ -242,10 +248,11 @@ def next_round(request, pk):
         return redirect("tournament_detail", pk=pk)
 
     try:
-        generate_round(tournament)
+        round_obj = generate_round(tournament)
         messages.success(
             request, f"Round {tournament.current_round} generated!"
         )
+        notify_round_started(round_obj)
     except ValueError as e:
         messages.error(request, str(e))
     return redirect("tournament_detail", pk=pk)
@@ -337,6 +344,7 @@ def report_result(request, match_pk):
 
             if match.confirmed:
                 messages.success(request, "Result confirmed by both players!")
+                notify_match_confirmed(match)
                 check_round_complete(match.round)
             elif both_reported and not match.confirmed:
                 # Both reported but results conflicted — got reset
@@ -349,6 +357,7 @@ def report_result(request, match_pk):
                     request,
                     "Result recorded. Waiting for your opponent to confirm.",
                 )
+                notify_result_reported(match, tp)
 
             # HTMX: return partial if it's an HTMX request
             if hasattr(request, "htmx") and request.htmx:

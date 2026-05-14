@@ -28,6 +28,7 @@ class ContentSecurityPolicyMiddleware:
         "base-uri 'self'",
         "object-src 'none'",
         "default-src 'self'",
+        "worker-src 'self'",
     )
 
     # script-src for regular pages — no 'unsafe-inline'.

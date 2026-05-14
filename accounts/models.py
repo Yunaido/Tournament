@@ -167,3 +167,37 @@ class WebAuthnCredential(models.Model):
 
     def __str__(self):
         return f"{self.name} ({self.user})"
+
+
+class PushSubscription(models.Model):
+    """A Web Push subscription for browser notifications."""
+
+    user = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name="push_subscriptions"
+    )
+    endpoint = models.TextField()
+    p256dh = models.CharField(max_length=200)
+    auth = models.CharField(max_length=100)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ("user", "endpoint")
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"Push subscription for {self.user}"
+
+
+class NotificationPreference(models.Model):
+    """Per-user notification preferences — controls which push events are sent."""
+
+    user = models.OneToOneField(
+        User, on_delete=models.CASCADE, related_name="notification_preference"
+    )
+    round_started = models.BooleanField(default=True, help_text="New round started in a tournament you're in.")
+    match_confirmed = models.BooleanField(default=True, help_text="Your match result was confirmed.")
+    result_reported = models.BooleanField(default=True, help_text="Your opponent reported a result.")
+    tournament_finished = models.BooleanField(default=True, help_text="A tournament you're in has finished.")
+
+    def __str__(self):
+        return f"Notification prefs for {self.user}"

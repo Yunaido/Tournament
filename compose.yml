@@ -17,6 +17,9 @@ services:
       - EMAIL_USE_TLS=0
       - ACCOUNT_DEFAULT_HTTP_PROTOCOL=http
       - SITE_DOMAIN=localhost:8000
+      - VAPID_PUBLIC_KEY=BPaSBaFlwrQIDIfTmBGhzcTthtElSFizvp0hOOwhCpcX77jKsp6Nb-OESquJM7r3_VlCTKieICUBrjt-hseeX5Q
+      - VAPID_PRIVATE_KEY=U9ouG837ClfimAoiJwPq8lPK92KEZBEZ_DYX0jxz4Cs
+      - VAPID_CLAIM_EMAIL=mailto:your-email@example.com
     depends_on:
       db:
         condition: service_healthy
